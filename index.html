@@ -160,7 +160,8 @@
                 FileText: <React.Fragment><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></React.Fragment>,
                 Download: <React.Fragment><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="3" y2="15"/></React.Fragment>,
                 ArrowUpRight: <path d="M7 7h10v10M7 17L17 7"/>,
-                ShieldAlert: <React.Fragment><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></React.Fragment>
+                ShieldAlert: <React.Fragment><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></React.Fragment>,
+                ArrowUp: <path d="M12 19V5M5 12l7-7 7 7"/>
             };
             return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>{icons[name] || null}</svg>;
         };
@@ -205,6 +206,7 @@
             const [imgError, setImgError] = useState(false);
             const [totalViews, setTotalViews] = useState(null);
             const [user, setUser] = useState(null);
+            const [showScrollTop, setShowScrollTop] = useState(false);
 
             useEffect(() => {
                 if (isDark) document.documentElement.classList.add('dark');
@@ -280,7 +282,10 @@
 
             useEffect(() => {
                 if (!isLoading) initMagicEffect();
-                const handleScroll = () => setScrollProgress(window.scrollY / (document.documentElement.scrollHeight - window.innerHeight));
+                const handleScroll = () => {
+                    setScrollProgress(window.scrollY / (document.documentElement.scrollHeight - window.innerHeight));
+                    setShowScrollTop(window.scrollY > 500);
+                };
                 const moveCursor = (e) => setCursorPos({ x: e.clientX, y: e.clientY });
                 window.addEventListener('scroll', handleScroll);
                 window.addEventListener('mousemove', moveCursor);
@@ -290,6 +295,10 @@
             const handleCVUnlock = () => {
                 if (cvPassword === "2026") { setIsCvUnlocked(true); setPasswordError(false); }
                 else { setPasswordError(true); setCvPassword(""); }
+            };
+
+            const scrollToTop = () => {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
             };
 
             const coreCareer = [
@@ -551,6 +560,15 @@
                             </div>
                         </div>
                     </footer>
+
+                    {/* Scroll To Top Button */}
+                    <button
+                        className={`fixed bottom-8 right-8 z-[9999] p-4 bg-indigo-600 text-white rounded-full shadow-2xl transition-all duration-300 hover:bg-indigo-700 hover:-translate-y-1 ${showScrollTop ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10 pointer-events-none'}`}
+                        onClick={scrollToTop}
+                        aria-label="Back to Top"
+                    >
+                        <Icon name="ArrowUp" size={24} />
+                    </button>
 
                     {/* Mobile Menu Overlay */}
                     {isMenuOpen && (
