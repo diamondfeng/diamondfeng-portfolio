@@ -8,10 +8,10 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;700;900&family=Playfair+Display:ital,wght@1,900&display=swap" rel="stylesheet">
-    <!-- React & Babel -->
-    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- React & Babel (使用更穩定的 jsdelivr) -->
+    <script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@babel/standalone/babel.min.js"></script>
 
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #050505; color: #e5e5e5; margin: 0; overflow-x: hidden; }
@@ -30,36 +30,47 @@
         .animate-spin-slow { animation: spin-slow 20s linear infinite; }
         .animate-spin-reverse { animation: spin-slow 15s linear infinite reverse; }
         
-        /* 隱藏捲動條但保留功能 */
         ::-webkit-scrollbar { width: 0px; background: transparent; }
         
         .fade-in { animation: fadeIn 1s ease-out forwards; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* 照片懸浮效果 */
         .photo-float {
             animation: floating 6s ease-in-out infinite;
             filter: grayscale(20%) contrast(110%);
             transition: all 0.5s ease;
-        }
-        .photo-float:hover {
-            filter: grayscale(0%) contrast(100%);
-            transform: scale(1.02);
         }
         @keyframes floating {
             0% { transform: translateY(0px); }
             50% { transform: translateY(-15px); }
             100% { transform: translateY(0px); }
         }
+        .uppercase-all { text-transform: uppercase; }
     </style>
 </head>
 <body>
-    <div id="root"></div>
+    <div id="root">
+        <!-- 如果 React 沒跑起來，至少會看到這個 Loading 狀態 -->
+        <div style="height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #050505; color: #4f46e5; font-family: sans-serif;">
+            <div style="font-weight: 900; letter-spacing: 0.5em; font-size: 12px;">INITIALIZING DIAMOND'S BRAIN...</div>
+            <div style="margin-top: 20px; width: 200px; hieght: 1px; background: #222; position: relative; height: 1px;">
+                <div style="position: absolute; height: 100%; background: #4f46e5; width: 50%; animation: loading 2s infinite ease-in-out;"></div>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        @keyframes loading {
+            0% { left: -50%; width: 30%; }
+            50% { left: 100%; width: 50%; }
+            100% { left: -50%; width: 30%; }
+        }
+    </style>
 
     <script type="text/babel">
         const { useState, useEffect, useRef } = React;
 
-        // --- 簡易內嵌圖示組件 ---
+        // --- 內嵌 SVG 圖示組件 ---
         const Icon = ({ name, size = 20, className = "" }) => {
             const icons = {
                 Sparkles: <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>,
@@ -73,7 +84,7 @@
             };
             return (
                 <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-                    {icons[name]}
+                    {icons[name] || null}
                 </svg>
             );
         };
@@ -93,10 +104,11 @@
             const [isMenuOpen, setIsMenuOpen] = useState(false);
             const [isChatOpen, setIsChatOpen] = useState(false);
             const [chatInput, setChatInput] = useState("");
-            const [chatHistory, setChatHistory] = useState([{ role: 'ai', text: 'Hi, 我是 Diamond 的數位分身。我準備好為訪客介紹妳的實績了。' }]);
+            const [chatHistory, setChatHistory] = useState([{ role: 'ai', text: 'Hi, 我是 Diamond 的數位分身。讓我們開始探索吧。' }]);
             const [isTyping, setIsTyping] = useState(false);
             const [scrollProgress, setScrollProgress] = useState(0);
             const [cursorPos, setCursorPos] = useState({ x: -100, y: -100 });
+            const [imgError, setImgError] = useState(false);
             const chatEndRef = useRef(null);
 
             useEffect(() => {
@@ -107,6 +119,7 @@
                 const moveCursor = (e) => setCursorPos({ x: e.clientX, y: e.clientY });
                 window.addEventListener('scroll', handleScroll);
                 window.addEventListener('mousemove', moveCursor);
+                console.log("Diamond's Website Started Successfully.");
                 return () => {
                     window.removeEventListener('scroll', handleScroll);
                     window.removeEventListener('mousemove', moveCursor);
@@ -123,14 +136,14 @@
                 setTimeout(() => {
                     let response = KNOWLEDGE_BASE.default;
                     if (input.includes("流量") || input.includes("pv")) response = KNOWLEDGE_BASE.流量;
-                    else if (input.includes("營收") || input.includes("錢")) response = KNOWLEDGE_BASE.營營收;
+                    else if (input.includes("營收") || input.includes("錢") || input.includes("賺")) response = KNOWLEDGE_BASE.營收;
                     else if (input.includes("ai") || input.includes("自動化")) response = KNOWLEDGE_BASE.ai;
                     else if (input.includes("tokyo")) response = KNOWLEDGE_BASE.tokyo;
                     else if (input.includes("nuva") || input.includes("專案")) response = KNOWLEDGE_BASE.nuva;
                     else if (input.includes("經歷")) response = KNOWLEDGE_BASE.經歷;
                     setChatHistory(prev => [...prev, { role: 'ai', text: response }]);
                     setIsTyping(false);
-                    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+                    setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
                 }, 600);
             };
 
@@ -142,12 +155,12 @@
 
                     {/* Navbar */}
                     <nav className="fixed top-0 w-full z-[1000] px-8 py-8 flex justify-between items-center mix-blend-difference">
-                        <div className="text-2xl font-black tracking-tighter uppercase">DIAMOND <span className="text-indigo-600">FENG</span></div>
-                        <div className="hidden md:flex space-x-12 text-[10px] uppercase tracking-[0.3em] font-bold">
-                            <a href="#growth" className="hover:text-indigo-500 transition-colors uppercase">Growth</a>
-                            <a href="#lab" className="hover:text-indigo-500 transition-colors uppercase">AI Lab</a>
-                            <a href="#archive" className="hover:text-indigo-500 transition-colors uppercase">Archive</a>
-                            <a href="#contact" className="border-b border-indigo-600 pb-1 uppercase">Get in touch</a>
+                        <div className="text-2xl font-black tracking-tighter uppercase-all">DIAMOND <span className="text-indigo-600">FENG</span></div>
+                        <div className="hidden md:flex space-x-12 text-[10px] uppercase tracking-[0.3em] font-bold uppercase-all">
+                            <a href="#growth" className="hover:text-indigo-500 transition-colors">Growth</a>
+                            <a href="#lab" className="hover:text-indigo-500 transition-colors">AI Lab</a>
+                            <a href="#archive" className="hover:text-indigo-500 transition-colors">Archive</a>
+                            <a href="#contact" className="border-b border-indigo-600 pb-1">Get in touch</a>
                         </div>
                         <button onClick={() => setIsMenuOpen(true)} className="md:hidden text-white"><Icon name="Menu" /></button>
                     </nav>
@@ -160,41 +173,42 @@
                             <div className="lg:col-span-8">
                                 <div className="flex items-center space-x-3 mb-6">
                                     <Icon name="Sparkles" className="text-indigo-500" size={16} />
-                                    <span className="text-[10px] font-black uppercase tracking-[0.5em] text-indigo-500 uppercase">Content Architect</span>
+                                    <span className="text-[10px] font-black uppercase tracking-[0.5em] text-indigo-500 uppercase-all">Content Architect</span>
                                 </div>
-                                <h1 className="text-[10vw] font-black leading-[0.85] tracking-tighter mb-10 uppercase">
+                                <h1 className="text-[10vw] font-black leading-[0.85] tracking-tighter mb-10 uppercase-all">
                                     Diamond <br />
-                                    <span className="italic serif text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-500 uppercase">Feng.</span>
+                                    <span className="italic serif text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-500 uppercase-all">Feng.</span>
                                 </h1>
                                 <p className="text-xl md:text-3xl text-gray-400 font-light leading-snug tracking-tight max-w-2xl mb-12">
                                     用 AI 賦能內容，讓故事規模化增長。<br/>
                                     專注於 <span className="text-white font-medium italic serif">爆發性流量</span> 與 <span className="text-white font-medium italic serif">商務變現</span>。
                                 </p>
                                 <div className="flex space-x-6">
-                                    <a href="#growth" className="bg-indigo-600 hover:bg-indigo-500 text-white px-8 py-4 text-xs font-bold tracking-widest uppercase transition-all">Explore Growth</a>
-                                    <a href="mailto:fengdiamond@gmail.com" className="border border-white/20 hover:border-white text-white px-8 py-4 text-xs font-bold tracking-widest uppercase transition-all">Contact Me</a>
+                                    <a href="#growth" className="bg-indigo-600 hover:bg-indigo-500 text-white px-8 py-4 text-xs font-bold tracking-widest uppercase transition-all uppercase-all">Explore Growth</a>
+                                    <a href="mailto:fengdiamond@gmail.com" className="border border-white/20 hover:border-white text-white px-8 py-4 text-xs font-bold tracking-widest uppercase transition-all uppercase-all">Contact Me</a>
                                 </div>
                             </div>
                             
-                            {/* 個人照片容器 */}
                             <div className="lg:col-span-4 relative flex justify-center lg:justify-end">
-                                <div className="photo-float relative w-64 h-80 md:w-80 md:h-[450px] bg-zinc-900 border border-white/10 overflow-hidden shadow-2xl">
-                                    <img 
-                                        src="個人照_Diamond_1.jpg" 
-                                        alt="Diamond Feng" 
-                                        className="w-full h-full object-cover"
-                                        onError={(e) => {
-                                            e.target.style.display = 'none';
-                                            e.target.parentNode.innerHTML = '<div class="flex items-center justify-center h-full text-xs text-gray-600 italic uppercase">Diamond Photo</div>';
-                                        }}
-                                    />
-                                    {/* 裝飾線條 */}
+                                <div className="photo-float relative w-64 h-80 md:w-80 md:h-[450px] bg-zinc-900 border border-white/10 overflow-hidden shadow-2xl flex items-center justify-center">
+                                    {!imgError ? (
+                                        <img 
+                                            src="個人照_Diamond_1.jpg" 
+                                            alt="Diamond Feng" 
+                                            className="w-full h-full object-cover"
+                                            onError={() => setImgError(true)}
+                                        />
+                                    ) : (
+                                        <div className="text-center p-10">
+                                            <Icon name="Sparkles" size={48} className="text-indigo-600 mb-4 mx-auto opacity-20" />
+                                            <div className="text-[10px] text-gray-600 italic uppercase tracking-widest leading-relaxed uppercase-all">Diamond Feng<br/>Strategic Specialist</div>
+                                        </div>
+                                    )}
                                     <div className="absolute top-4 right-4 text-indigo-500 mix-blend-difference">
                                         <div className="w-8 h-[1px] bg-current mb-1"></div>
                                         <div className="w-4 h-[1px] bg-current"></div>
                                     </div>
                                 </div>
-                                {/* 裝飾背景框 */}
                                 <div className="absolute -z-10 top-10 right-10 lg:right-[-20px] w-64 h-80 md:w-80 md:h-[450px] border border-indigo-600/30"></div>
                             </div>
                         </div>
@@ -203,27 +217,27 @@
                     {/* Stats */}
                     <section id="growth" className="py-24 px-6 md:px-24">
                         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 h-auto md:h-[500px]">
-                            <div className="md:col-span-2 md:row-span-2 bg-[#111] border border-white/5 p-12 flex flex-col justify-between group overflow-hidden">
+                            <div className="md:col-span-2 md:row-span-2 bg-[#111] border border-white/5 p-12 flex flex-col justify-between group overflow-hidden relative">
                                 <div className="relative z-10">
-                                    <div className="text-[10px] font-black uppercase text-indigo-500 mb-6 italic uppercase">Growth Metric</div>
-                                    <h4 className="text-8xl font-black tracking-tighter transition-all group-hover:text-indigo-500 uppercase">1.38M</h4>
-                                    <p className="text-xl font-bold uppercase text-gray-400 uppercase">Monthly Page Views</p>
+                                    <div className="text-[10px] font-black uppercase text-indigo-500 mb-6 italic uppercase tracking-widest uppercase-all">Growth Metric</div>
+                                    <h4 className="text-8xl font-black tracking-tighter transition-all group-hover:text-indigo-500 uppercase-all">1.38M</h4>
+                                    <p className="text-xl font-bold uppercase text-gray-400 uppercase-all">Monthly Page Views</p>
                                 </div>
                                 <div className="absolute top-0 right-0 p-10 opacity-5 -rotate-12 translate-x-10 -translate-y-10 group-hover:rotate-0 group-hover:translate-x-0 group-hover:translate-y-0 transition-all duration-700">
                                     <Icon name="TrendingUp" size={200} />
                                 </div>
                             </div>
                             <div className="md:col-span-2 bg-indigo-600 p-10 flex flex-col justify-center text-white">
-                                <div className="text-5xl font-black tracking-tighter italic uppercase">33,000+ Fans</div>
-                                <p className="text-sm uppercase tracking-widest opacity-80 uppercase">10 Days Growth @Tokyo Edit</p>
+                                <div className="text-5xl font-black tracking-tighter italic uppercase uppercase-all">33,000+ Fans</div>
+                                <p className="text-sm uppercase tracking-widest opacity-80 uppercase uppercase-all">10 Days Growth @Tokyo Edit</p>
                             </div>
                             <div className="bg-[#111] border border-white/5 p-8 flex flex-col justify-between hover:bg-white hover:text-black transition-all">
-                                <div className="text-[10px] font-black uppercase text-gray-500 italic uppercase">BD Yield</div>
-                                <div className="text-4xl font-black italic tracking-tighter uppercase uppercase">300%</div>
+                                <div className="text-[10px] font-black uppercase text-gray-500 italic uppercase-all">BD Yield</div>
+                                <div className="text-4xl font-black italic tracking-tighter uppercase-all">300%</div>
                             </div>
                             <div className="bg-white text-black p-8 flex flex-col justify-between">
-                                <div className="text-[10px] font-black uppercase text-gray-400 font-bold uppercase uppercase">Revenue</div>
-                                <div className="text-2xl font-black tracking-tighter uppercase leading-none uppercase">400K+ <br/><span className="text-xs uppercase">Monthly</span></div>
+                                <div className="text-[10px] font-black uppercase text-gray-400 font-bold uppercase-all">Revenue</div>
+                                <div className="text-2xl font-black tracking-tighter uppercase leading-none uppercase-all">400K+ <br/><span className="text-xs uppercase-all">Monthly</span></div>
                             </div>
                         </div>
                     </section>
@@ -232,7 +246,7 @@
                     <section id="lab" className="py-40 px-6 md:px-24 bg-black">
                         <div className="max-w-7xl mx-auto flex flex-col lg:flex-row gap-24">
                             <div className="lg:w-1/2">
-                                <h3 className="text-6xl font-black tracking-tighter mb-16 uppercase italic uppercase">The <br/><span className="text-indigo-500 uppercase">AI Soul.</span></h3>
+                                <h3 className="text-6xl font-black tracking-tighter mb-16 uppercase italic uppercase-all">The <br/><span className="text-indigo-500 uppercase-all">AI Soul.</span></h3>
                                 <div className="space-y-12 text-white">
                                     {[
                                         { t: "Workflow Architecture", d: "利用 GAS 與 LLM 打造無人化內容產線。實現單人運營百萬流量的效率革命。" },
@@ -240,8 +254,8 @@
                                         { t: "Strategic BD", d: "具備強大的 Cold Outreach 能力。一週內開發 Red Bull 贊助並對接大廠。" }
                                     ].map((item, i) => (
                                         <div key={i} className="border-l-2 border-white/10 pl-8 hover:border-indigo-600 transition-all">
-                                            <h5 className="text-lg font-black uppercase tracking-widest mb-4 uppercase">{item.t}</h5>
-                                            <p className="text-gray-500 text-sm font-light uppercase">{item.d}</p>
+                                            <h5 className="text-lg font-black uppercase tracking-widest mb-4 uppercase-all">{item.t}</h5>
+                                            <p className="text-gray-500 text-sm font-light">{item.d}</p>
                                         </div>
                                     ))}
                                 </div>
@@ -250,7 +264,7 @@
                                 <div className="w-80 h-80 border border-white/5 rounded-full flex items-center justify-center animate-spin-slow">
                                     <div className="w-60 h-60 border border-indigo-600/30 rounded-full animate-spin-reverse"></div>
                                 </div>
-                                <div className="absolute text-center"><div className="text-3xl font-black italic serif uppercase text-white uppercase">Data Driven</div></div>
+                                <div className="absolute text-center"><div className="text-3xl font-black italic serif uppercase text-white uppercase-all">Data Driven</div></div>
                             </div>
                         </div>
                     </section>
@@ -258,7 +272,7 @@
                     {/* Archive */}
                     <section id="archive" className="py-40 px-6 md:px-24 bg-[#050505]">
                         <div className="max-w-4xl mx-auto">
-                            <h3 className="text-5xl font-black tracking-tighter mb-24 uppercase italic underline decoration-indigo-600 uppercase">The Archive.</h3>
+                            <h3 className="text-5xl font-black tracking-tighter mb-24 uppercase italic underline decoration-indigo-600 uppercase-all">Archive.</h3>
                             <div className="space-y-12">
                                 {[
                                     { c: "nuva & couchspace", r: "Strategic Consultant", p: "2025.09 - 2026.01", d: "全陌生開發台港泰通路，專案溢價 300%。" },
@@ -268,11 +282,11 @@
                                 ].map((item, i) => (
                                     <div key={i} className="group border-b border-white/5 pb-10 hover:bg-white/5 px-4 transition-all">
                                         <div className="flex justify-between items-end mb-4 text-white">
-                                            <div className="text-xl font-black tracking-tighter uppercase uppercase">{item.c}</div>
-                                            <div className="text-[10px] font-black uppercase text-gray-500 uppercase">{item.p}</div>
+                                            <div className="text-xl font-black tracking-tighter uppercase uppercase-all">{item.c}</div>
+                                            <div className="text-[10px] font-black uppercase text-gray-500 uppercase-all">{item.p}</div>
                                         </div>
-                                        <div className="text-xs font-bold italic text-indigo-500 mb-2 uppercase tracking-widest uppercase">{item.r}</div>
-                                        <p className="text-xs text-gray-600 leading-relaxed uppercase uppercase">{item.d}</p>
+                                        <div className="text-xs font-bold italic text-indigo-500 mb-2 uppercase tracking-widest uppercase-all">{item.r}</div>
+                                        <p className="text-xs text-gray-600 leading-relaxed uppercase">{item.d}</p>
                                     </div>
                                 ))}
                             </div>
@@ -281,15 +295,10 @@
 
                     {/* Footer */}
                     <footer id="contact" className="py-40 bg-black text-center relative overflow-hidden">
-                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[15vw] font-black text-white/[0.02] italic uppercase">DIAMOND</div>
+                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[15vw] font-black text-white/[0.02] italic uppercase uppercase-all">DIAMOND</div>
                         <div className="relative z-10 text-white">
-                            <h2 className="text-7xl font-black tracking-tighter mb-12 italic uppercase leading-none uppercase">Let's scale <br/><span className="text-indigo-600 uppercase">your story.</span></h2>
-                            <a href="mailto:fengdiamond@gmail.com" className="text-xl font-black hover:text-indigo-500 transition-all uppercase underline uppercase">fengdiamond@gmail.com</a>
-                            <div className="mt-12 flex justify-center space-x-10 text-xs font-bold tracking-widest uppercase opacity-40">
-                                <a href="#" className="hover:opacity-100 transition-opacity">LinkedIn</a>
-                                <a href="#" className="hover:opacity-100 transition-opacity">Threads</a>
-                                <a href="#" className="hover:opacity-100 transition-opacity">Instagram</a>
-                            </div>
+                            <h2 className="text-7xl font-black tracking-tighter mb-12 italic uppercase leading-none uppercase-all">Let's scale <br/><span className="text-indigo-600 uppercase-all">your story.</span></h2>
+                            <a href="mailto:fengdiamond@gmail.com" className="text-xl font-black hover:text-indigo-500 transition-all uppercase underline uppercase-all">fengdiamond@gmail.com</a>
                         </div>
                     </footer>
 
@@ -299,15 +308,15 @@
                             {isChatOpen ? <Icon name="X" /> : <Icon name="MessageSquare" />}
                         </button>
                         {isChatOpen && (
-                            <div className="absolute bottom-20 right-0 w-72 h-[400px] bg-[#111] border border-white/10 rounded-2xl shadow-2xl flex flex-col overflow-hidden">
-                                <div className="p-3 bg-indigo-600 font-black text-[10px] uppercase tracking-widest text-white">Digital Brain</div>
+                            <div className="absolute bottom-20 right-0 w-72 h-[400px] bg-[#111] border border-white/10 rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in fade-in">
+                                <div className="p-3 bg-indigo-600 font-black text-[10px] uppercase tracking-widest text-white uppercase-all">Digital Brain</div>
                                 <div className="flex-1 overflow-y-auto p-4 space-y-4 text-[10px] font-light">
                                     {chatHistory.map((msg, i) => (
                                         <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                                             <div className={`max-w-[85%] p-2 rounded-lg ${msg.role === 'user' ? 'bg-indigo-600 text-white' : 'bg-[#1a1a1a] text-gray-300 border border-white/5'}`}>{msg.text}</div>
                                         </div>
                                     ))}
-                                    {isTyping && <div className="animate-pulse text-white uppercase">Thinking...</div>}
+                                    {isTyping && <div className="animate-pulse text-indigo-500 uppercase-all">Thinking...</div>}
                                     <div ref={chatEndRef} />
                                 </div>
                                 <div className="p-2 bg-black flex items-center text-white">
@@ -322,11 +331,11 @@
                     {isMenuOpen && (
                         <div className="fixed inset-0 z-[10002] bg-black p-12 flex flex-col justify-center text-white uppercase font-black italic">
                             <div className="absolute top-8 right-8" onClick={() => setIsMenuOpen(false)}><Icon name="X" size={40} /></div>
-                            <div className="space-y-10 text-6xl tracking-tighter">
-                                <a href="#growth" onClick={() => setIsMenuOpen(false)} className="block hover:text-indigo-500 uppercase uppercase">Growth</a>
-                                <a href="#lab" onClick={() => setIsMenuOpen(false)} className="block hover:text-indigo-500 uppercase uppercase">AI Lab</a>
-                                <a href="#archive" onClick={() => setIsMenuOpen(false)} className="block hover:text-indigo-500 uppercase uppercase">Archive</a>
-                                <a href="#contact" onClick={() => setIsMenuOpen(false)} className="block hover:text-indigo-500 uppercase uppercase">Contact</a>
+                            <div className="space-y-10 text-6xl tracking-tighter uppercase-all">
+                                <a href="#growth" onClick={() => setIsMenuOpen(false)} className="block hover:text-indigo-500">Growth</a>
+                                <a href="#lab" onClick={() => setIsMenuOpen(false)} className="block hover:text-indigo-500">AI Lab</a>
+                                <a href="#archive" onClick={() => setIsMenuOpen(false)} className="block hover:text-indigo-500">Archive</a>
+                                <a href="#contact" onClick={() => setIsMenuOpen(false)} className="block hover:text-indigo-500">Contact</a>
                             </div>
                         </div>
                     )}
