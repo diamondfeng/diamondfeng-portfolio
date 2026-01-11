@@ -27,7 +27,7 @@
     <script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@babel/standalone/babel.min.js"></script>
     <!-- 訪客計數器服務 (Busuanzi) -->
-    <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
 
     <style>
         body { transition: background-color 1s ease, color 0.5s ease; font-size: 16px; line-height: 1.5; letter-spacing: 0.01em; overflow-x: hidden; }
@@ -51,7 +51,13 @@
         ::-webkit-scrollbar { width: 4px; background: transparent; }
         ::-webkit-scrollbar-thumb { background: #4f46e5; border-radius: 10px; }
 
-        .photo-container { overflow: hidden; position: relative; border-radius: 4px; border: 1px solid rgba(255,255,255,0.05); }
+        .photo-container { 
+            overflow: hidden; 
+            position: relative; 
+            border-radius: 4px; 
+            border: 1px solid rgba(255,255,255,0.05);
+            max-width: 100%;
+        }
         .photo-img { 
             transition: transform 1.2s cubic-bezier(0.19, 1, 0.22, 1), filter 1s ease;
             filter: contrast(1.05) brightness(1.02) saturate(1.1);
@@ -73,6 +79,9 @@
         .scanline { position: absolute; width: 100%; height: 8px; background: linear-gradient(to bottom, transparent, rgba(79, 70, 229, 0.15), transparent); animation: scanline 4s linear infinite; }
         
         html { scroll-behavior: smooth; }
+
+        #busuanzi_value_site_pv:empty::before { content: "..."; animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
     </style>
 </head>
 <body class="bg-[#fcfcfc] text-zinc-900 dark:bg-[#030303] dark:text-zinc-100">
@@ -185,7 +194,20 @@
             }, [isDark]);
 
             useEffect(() => {
-                if (!isLoading) initMagicEffect();
+                if (!isLoading) {
+                    initMagicEffect();
+                    // 修復不蒜子在 React 渲染後的錯誤與顯示問題
+                    const bszTimer = setTimeout(() => {
+                        try {
+                            if (typeof window.bszCaller !== 'undefined' && document.getElementById('busuanzi_value_site_pv')) {
+                                window.bszCaller.fetch();
+                            }
+                        } catch (e) {
+                            // 捕捉第三方腳本內部錯誤以防止頁面崩潰
+                        }
+                    }, 500);
+                    return () => clearTimeout(bszTimer);
+                }
                 const handleScroll = () => setScrollProgress(window.scrollY / (document.documentElement.scrollHeight - window.innerHeight));
                 const moveCursor = (e) => setCursorPos({ x: e.clientX, y: e.clientY });
                 window.addEventListener('scroll', handleScroll);
@@ -210,7 +232,7 @@
 
             const ventures = [
                 { c: "nuva", sub: "AI 教育網紅品牌", url: "https://www.meetnuva.com/", r: "商務開發總監 Business Development Director", p: "2025.09 – 2026.01", d: ["亞太跨國 0 到 1 陌生開發：一個月內達成泰國實體 AI 講座（40人）、香港最大線上 AI 教育公司聯名講座（80人）及 XChange 團隊合作佈局", "向誠品吉隆坡 (Eslite KL) 行銷團隊提案 AI 教育月書籍策展 規劃每週誠品講堂 並獲得天下換日線合作意向", "顧問式銷售溢價：將傳產客戶單日工作坊需求 顧問轉化為 3.5 日深度 AI 課程加發表活動 合約案源價值從 10 萬提升至 30 萬以上 (300% 溢價達成)", "戰略對接天下換日線爭取專屬專欄及網站專訪 牽線關鍵評論網《商業內幕》促使總編引薦基隆市長關注品牌相關訪問議題", "一週內成功談成 Red Bull 野營用品與花藝贊助 廠商追加 10 箱贊助量 引薦創辦人擔任 2026 Red Bull Basement 全球競賽台灣區評審"] },
-                { c: "couchspace", sub: "沙發心理", url: "https://www.thecouchspace.com/", r: "業務經理 Business Manager", p: "2025.09 – 2026.01", d: ["B2B 年度福利方案規劃：與 H2U 永悅健康共同策劃 緯穎科技 佳能台灣 (Canon) 2026 年度員工福利專案 負責價值鏈設計", "獨立規劃台達電年度方案 並針對 HR 族群主導執行專屬 HRV 檢測活動 建立品牌與企業之深層連結", "牽線並談成 天下學習 x couchspace 及 Hahow x couchspace 年度深度合作方案 (包含國際書展專屬方案與訂閱影音課程) 拓展變現渠道", "系統化整頓公司四年累積之名單 並透過陌生開發建立全新專業心理師 芳療師資與外部商務合作資源庫 活化公司資產"] }
+                { c: "couchspace", sub: "沙發心理", url: "https://www.thecouchspace.com/", r: "業務經理 Business Manager", p: "2025.09 – 2026.01", d: ["B2B 年度福利方案規劃：與 H2U 永悅健康共同策劃 緯穎科技 佳能台灣 (Canon) 2026 年度員工福利專案 負責價值鏈設計", "獨立規劃台達電年度方案 並針對 HR 族群主導執行專屬 HRV 檢測活動 建立品牌與企業之深層連結", "牽線並談成 天下學習 x couchspace 及 Hahow x couchspace 年度深度合作方案 (包含國際書展專屬方案與訂閱影音課程) 拓展變現渠道", "系統化整頓公司四年累積之名單 並透過陌生開發建立全新 professional 資源庫 活化公司資產"] }
             ];
 
             const brandData = { c: "Tokyo Edit", sub: "自媒體", r: "創辦人暨總編輯 Founder & Editor-in-Chief", p: "2025.04 – 至今", url: "https://www.threads.com/@tokyoedittt", d: ["品牌建立 3 天突破 2 萬粉絲 10 天內突破 3 萬粉絲 (目前 3.3 萬) 單篇最高紀錄達 91 萬次瀏覽與 1.8 萬次愛心 每月穩定互動 2 萬次以上 實現爆發性增長", "移植 Roomie AI 內容工作流 (資訊搜集 多語翻譯 重構 數據分析 SEO) 實現高頻且高質量的內容產出", "媒體商務模式實踐：與日本代購品牌選享家建立專業分工模式，主導品牌調性與選品策略，首月達成與日本金鳥 (Kincho)的合作", "高階品牌商業合作：首月即達成日本百年品牌「日本金鳥 (Kincho)」業配合作；後續接連受邀與 HOLA x 日本龜之子束子、中台興化學-鱷魚蚊香、Cure Care (安炫曜) 等企業執行專案與團購。"] };
@@ -280,18 +302,18 @@
                     {/* Hero Section */}
                     <section className="min-h-screen flex flex-col justify-center px-6 md:px-24 relative pt-32 pb-24 overflow-hidden text-center lg:text-left">
                         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[900px] bg-indigo-600/5 blur-[160px] rounded-full"></div>
-                        <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-16 items-center reveal">
-                            <div className="lg:col-span-8">
+                        <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-center reveal max-w-7xl mx-auto">
+                            <div className="lg:col-span-7 xl:col-span-8">
                                 <div className="flex items-center justify-center lg:justify-start space-x-3 mb-10 text-indigo-600"><Icon name="Sparkles" size={22} /><span className="text-[11px] font-black tracking-[0.6em] uppercase font-bold">AI CONTENT ARCHITECT & STRATEGIST</span></div>
-                                <h1 className="text-[14vw] md:text-[10vw] font-black leading-[0.8] tracking-tighter mb-12 text-zinc-900 dark:text-zinc-100 uppercase select-none">馮興怡 <br /><span className="italic serif text-transparent bg-clip-text bg-gradient-to-r from-zinc-900 to-zinc-500 dark:from-white dark:to-zinc-600 tracking-tighter uppercase">Diamond Feng</span></h1>
-                                <p className="text-2xl md:text-5xl lg:text-6xl text-zinc-700 dark:text-zinc-400 font-light max-w-3xl mb-16 leading-tight uppercase text-zinc-900 dark:text-zinc-400">內容營運與增長專家 <br/><span className="text-indigo-600 font-bold italic serif">AI-Driven Content Ops & Growth</span></p>
-                                <div className="flex flex-wrap justify-center lg:justify-start gap-5 md:gap-10">
-                                    <a href="#contact" className="w-full md:w-auto text-center bg-indigo-600 hover:bg-indigo-700 text-white px-16 py-6 text-sm font-black tracking-widest uppercase transition-all shadow-2xl rounded-sm hover:-translate-y-1 text-white font-bold">Connect With Me</a>
-                                    <a href="#brand" className="w-full md:w-auto text-center border-2 border-zinc-300 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-900 px-16 py-6 text-sm font-black tracking-widest uppercase transition-all rounded-sm font-bold">View Projects</a>
+                                <h1 className="text-[12vw] sm:text-[10vw] lg:text-[8vw] font-black leading-[0.85] tracking-tighter mb-10 text-zinc-900 dark:text-zinc-100 uppercase select-none">馮興怡 <br /><span className="italic serif text-transparent bg-clip-text bg-gradient-to-r from-zinc-900 to-zinc-500 dark:from-white dark:to-zinc-600 tracking-tighter uppercase">Diamond Feng</span></h1>
+                                <p className="text-xl sm:text-2xl md:text-4xl lg:text-5xl text-zinc-700 dark:text-zinc-400 font-light max-w-3xl mb-12 leading-tight uppercase text-zinc-900 dark:text-zinc-400">內容營運與增長專家 <br/><span className="text-indigo-600 font-bold italic serif">AI-Driven Content Ops & Growth</span></p>
+                                <div className="flex flex-wrap justify-center lg:justify-start gap-5">
+                                    <a href="#contact" className="w-full sm:w-auto text-center bg-indigo-600 hover:bg-indigo-700 text-white px-12 py-5 text-sm font-black tracking-widest uppercase transition-all shadow-2xl rounded-sm hover:-translate-y-1 text-white font-bold">Connect With Me</a>
+                                    <a href="#brand" className="w-full sm:w-auto text-center border-2 border-zinc-300 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-900 px-12 py-5 text-sm font-black tracking-widest uppercase transition-all rounded-sm font-bold">View Projects</a>
                                 </div>
                             </div>
-                            <div className="lg:col-span-4 flex justify-center lg:justify-end">
-                                <div className="photo-container photo-float relative w-72 h-96 md:w-96 md:h-[550px] lg:w-[450px] lg:h-[600px] border-[16px] border-white dark:border-zinc-900 shadow-2xl bg-zinc-200 dark:bg-zinc-800">
+                            <div className="lg:col-span-5 xl:col-span-4 flex justify-center lg:justify-end">
+                                <div className="photo-container photo-float relative w-64 h-80 sm:w-80 sm:h-[480px] lg:w-[380px] lg:h-[520px] border-[12px] md:border-[16px] border-white dark:border-zinc-900 shadow-2xl bg-zinc-200 dark:bg-zinc-800">
                                     {!imgError ? (<img src="個人照_Diamond_1.jpg" alt="Diamond Feng" className="photo-img w-full h-full object-cover" onError={() => setImgError(true)} />) : (<div className="w-full h-full flex items-center justify-center italic text-white font-serif text-3xl bg-indigo-950 uppercase tracking-tighter">Diamond Feng</div>)}
                                 </div>
                             </div>
@@ -302,7 +324,7 @@
                     <section id="about" className="py-48 md:py-64 px-6 md:px-24 bg-zinc-100/50 dark:bg-[#060606] border-y border-zinc-200 dark:border-zinc-800 text-center text-zinc-900 dark:text-white">
                         <div className="max-w-6xl mx-auto">
                             <h2 className="text-[11px] font-black tracking-[1em] text-indigo-600 mb-20 uppercase opacity-60 font-bold">EXECUTIVE SUMMARY</h2>
-                            <p className="text-3xl md:text-5xl lg:text-7xl font-serif italic leading-tight mb-20 tracking-tight">橫跨實體零售 電商與媒體領域逾 10 年經驗 <br/>擅長透過 AI 工作流將分散資訊轉化為高增長方案</p>
+                            <p className="text-3xl md:text-5xl lg:text-6xl font-serif italic leading-tight mb-20 tracking-tight">橫跨實體零售 電商與媒體領域逾 10 年經驗 <br/>擅長透過 AI 工作流將分散資訊轉化為高增長方案</p>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-20 body-text text-zinc-500 dark:text-zinc-400 font-light text-left md:text-center px-4 leading-relaxed lg:px-20">
                                 <p>具備橫跨實體零售 旅遊 電商與媒體領域超過 10 年的豐富經驗 曾於大型企業 外商與新創公司發揮影響力 親自參與從採訪 寫作到網站及內容產品規劃等全流程 並透過跨部門溝通協作 將分散資訊與多方期待整合為具體可執行的內容方案</p>
                                 <p>善於發掘潛在問題並提出切實可行的解決策略 曾協助優化網站架構與內容 提升用戶體驗與流量 於一年內達成單月突破 1.38M PV 並建立高效獲利模型 精通利用 AI 工作流與自動化技術如 GAS + LLM 提升營運效率 並具備強大的陌生開發與亞太區國際商務對接能力</p>
@@ -393,7 +415,7 @@
                             <div className="lg:col-span-2 lg:row-span-2 bg-white dark:bg-[#111] border border-zinc-200 dark:border-white/5 p-12 md:p-20 flex flex-col justify-between group relative overflow-hidden shadow-sm text-center lg:text-left">
                                 <div className="relative z-10 text-zinc-900 dark:text-zinc-100">
                                     <div className="text-[11px] font-black tracking-[0.6em] text-indigo-600 mb-10 italic uppercase font-bold">LEGENDARY GROWTH METRIC</div>
-                                    <h4 className="text-8xl md:text-[11.5rem] font-black tracking-tighter group-hover:scale-105 transition-transform duration-1000 leading-none text-zinc-900 dark:text-zinc-100 uppercase">1.38M</h4>
+                                    <h4 className="text-7xl md:text-[11.5rem] font-black tracking-tighter group-hover:scale-105 transition-transform duration-1000 leading-none text-zinc-900 dark:text-zinc-100 uppercase">1.38M</h4>
                                     <p className="text-2xl font-black uppercase text-zinc-400 tracking-tighter mt-8 italic">Monthly Page Views</p>
                                 </div>
                                 <Icon name="TrendingUp" className="absolute top-0 right-0 p-12 opacity-5 dark:opacity-10 text-indigo-600" size={450} />
@@ -424,7 +446,7 @@
                     <footer id="contact" className="py-32 md:py-64 bg-zinc-100 dark:bg-black text-center relative overflow-hidden text-zinc-900 dark:text-zinc-100 uppercase">
                         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[25vw] font-black text-white dark:text-white/[0.015] italic uppercase pointer-events-none tracking-tighter select-none">DIAMOND</div>
                         <div className="relative z-10 px-6">
-                            <h2 className="text-6xl md:text-9xl lg:text-[12rem] font-black tracking-tighter mb-24 italic leading-[0.75] select-none text-zinc-900 dark:text-white uppercase">Let's scale <br/><span className="text-indigo-600 uppercase">your story</span></h2>
+                            <h2 className="text-6xl md:text-9xl lg:text-[10rem] font-black tracking-tighter mb-24 italic leading-[0.75] select-none text-zinc-900 dark:text-white uppercase">Let's scale <br/><span className="text-indigo-600 uppercase">your story</span></h2>
                             <div className="mt-20 md:mt-40"><a href="mailto:fengdiamond@gmail.com" className="text-2xl md:text-5xl lg:text-7xl font-black tracking-tighter hover:text-indigo-600 transition-all underline decoration-4 md:decoration-[16px] underline-offset-8 md:underline-offset-[24px] decoration-indigo-600/20 hover:decoration-indigo-600/100 uppercase leading-none block md:inline-block text-zinc-900 dark:text-white">fengdiamond@gmail.com</a></div>
                             
                             {/* 版權與數據欄 */}
@@ -434,7 +456,9 @@
                                 {/* 訪客計數器 */}
                                 <div className="font-mono text-indigo-500 font-bold tracking-[0.3em] flex items-center space-x-3 bg-indigo-500/5 px-4 py-2 rounded-full border border-indigo-500/10">
                                     <span className="opacity-60">TOTAL VIEWS:</span>
-                                    <span id="busuanzi_value_site_pv">...</span>
+                                    <span id="busuanzi_container_site_pv" style={{ display: 'inline' }}>
+                                        <span id="busuanzi_value_site_pv"></span>
+                                    </span>
                                 </div>
 
                                 <span className="uppercase opacity-60 font-bold font-mono">TAIPEI, TAIWAN</span>
