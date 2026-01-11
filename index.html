@@ -1,318 +1,468 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { 
-  Sparkles, TrendingUp, X, Menu, Sun, Moon, 
-  ExternalLink, Cpu, Lock, FileText, Download, 
-  ArrowUpRight, ShieldAlert, User, MousePointer2 
-} from 'lucide-react';
+<!DOCTYPE html>
+<html lang="zh-TW" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diamond Feng 馮興怡 | AI 內容營運與增長專家</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'Noto Sans TC', 'sans-serif'],
+                        serif: ['Playfair Display', 'Noto Serif TC', 'serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;700;900&family=Playfair+Display:ital,wght@0,400;0,700;1,400;1,700&family=Noto+Sans+TC:wght@300;400;500;700;900&family=Noto+Serif+TC:wght@400;700&family=JetBrains+Mono&display=swap" rel="stylesheet">
+    <!-- React & Babel -->
+    <script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@babel/standalone/babel.min.js"></script>
+    <!-- 訪客計數器服務 (Busuanzi) -->
+    <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
 
-const App = () => {
-  const [isLoading, setIsLoading] = useState(true);
-  const [isDark, setIsDark] = useState(true);
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isCVModalOpen, setIsCVModalOpen] = useState(false);
-  const [cvPassword, setCvPassword] = useState("");
-  const [isCvUnlocked, setIsCvUnlocked] = useState(false);
-  const [passwordError, setPasswordError] = useState(false);
-  const [scrollProgress, setScrollProgress] = useState(0);
-  const [cursorPos, setCursorPos] = useState({ x: -100, y: -100 });
-  const [visitorCount, setVisitorCount] = useState(0);
+    <style>
+        body { transition: background-color 1s ease, color 0.5s ease; font-size: 16px; line-height: 1.5; letter-spacing: 0.01em; overflow-x: hidden; }
+        .serif { font-family: 'Playfair Display', 'Noto Serif TC', serif; }
+        .mono { font-family: 'JetBrains Mono', monospace; }
+        
+        .noise {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: url('https://grainy-gradients.vercel.app/noise.svg');
+            opacity: 0.02; pointer-events: none; z-index: 9999;
+        }
+        .dark .noise { opacity: 0.04; }
+        
+        .cursor-circle {
+            position: fixed; width: 32px; height: 32px; border: 1px solid #6366f1;
+            border-radius: 50%; pointer-events: none; z-index: 10000;
+            transition: transform 0.15s cubic-bezier(0.23, 1, 0.32, 1);
+            mix-blend-difference: exclusion;
+        }
+        
+        ::-webkit-scrollbar { width: 4px; background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #4f46e5; border-radius: 10px; }
 
-  // 粒子特效邏輯
-  const canvasRef = useRef(null);
-  
-  useEffect(() => {
-    if (isDark) document.documentElement.classList.add('dark');
-    else document.documentElement.classList.remove('dark');
-  }, [isDark]);
+        .photo-container { overflow: hidden; position: relative; border-radius: 4px; border: 1px solid rgba(255,255,255,0.05); }
+        .photo-img { 
+            transition: transform 1.2s cubic-bezier(0.19, 1, 0.22, 1), filter 1s ease;
+            filter: contrast(1.05) brightness(1.02) saturate(1.1);
+        }
+        .photo-container:hover .photo-img { transform: scale(1.1); filter: contrast(1.1) brightness(1.08) saturate(1.2); }
+        .photo-container:hover { box-shadow: 0 40px 100px rgba(79, 70, 229, 0.3); }
+        .photo-float { animation: floating 8s ease-in-out infinite; }
+        @keyframes floating { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-20px); } }
 
-  useEffect(() => {
-    // 滾動與鼠標邏輯
-    const handleScroll = () => setScrollProgress(window.scrollY / (document.documentElement.scrollHeight - window.innerHeight));
-    const moveCursor = (e) => setCursorPos({ x: e.clientX, y: e.clientY });
-    window.addEventListener('scroll', handleScroll);
-    window.addEventListener('mousemove', moveCursor);
-    
-    // 模擬進站人數 (解決不顯示問題)
-    const timer = setTimeout(() => {
-      let start = 12450;
-      const end = 12580;
-      const duration = 2000;
-      const range = end - start;
-      let current = start;
-      const increment = end > start ? 1 : -1;
-      const stepTime = Math.abs(Math.floor(duration / range));
-      const obj = setInterval(() => {
-        current += increment;
-        setVisitorCount(current);
-        if (current === end) clearInterval(obj);
-      }, stepTime);
-    }, 3000);
+        .list-bullet { @apply relative pl-8 mb-4; }
+        .list-bullet::before { content: "→"; @apply absolute left-0 text-indigo-500 font-black opacity-80; }
+        
+        #magic-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 9998; }
 
-    return () => {
-      window.removeEventListener('scroll', handleScroll);
-      window.removeEventListener('mousemove', moveCursor);
-      clearTimeout(timer);
-    };
-  }, []);
+        @keyframes reveal { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+        .reveal { animation: reveal 1.5s cubic-bezier(0.19, 1, 0.22, 1) forwards; }
 
-  // 粒子特效初始化
-  useEffect(() => {
-    if (isLoading) return;
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    let particles = [];
-    
-    const resize = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-    };
-    
-    class Particle {
-      constructor(x, y) {
-        this.x = x; this.y = y;
-        this.size = Math.random() * 2 + 0.5;
-        this.speedX = Math.random() * 2 - 1;
-        this.speedY = Math.random() * 2 - 1;
-        this.life = 1; this.decay = Math.random() * 0.02 + 0.01;
-        this.color = '#6366f1';
-      }
-      update() { this.x += this.speedX; this.y += this.speedY; this.life -= this.decay; }
-      draw() {
-        ctx.globalAlpha = this.life; ctx.fillStyle = this.color;
-        ctx.beginPath(); ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2); ctx.fill();
-      }
-    }
+        @keyframes scanline { 0% { transform: translateY(-100%); } 100% { transform: translateY(100%); } }
+        .scanline { position: absolute; width: 100%; height: 8px; background: linear-gradient(to bottom, transparent, rgba(79, 70, 229, 0.15), transparent); animation: scanline 4s linear infinite; }
+        
+        html { scroll-behavior: smooth; }
+    </style>
+</head>
+<body class="bg-[#fcfcfc] text-zinc-900 dark:bg-[#030303] dark:text-zinc-100">
+    <canvas id="magic-canvas"></canvas>
+    <div id="root"></div>
 
-    const handleMove = (e) => {
-      for(let i=0; i<3; i++) particles.push(new Particle(e.clientX, e.clientY));
-    };
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
 
-    window.addEventListener('resize', resize);
-    window.addEventListener('mousemove', handleMove);
-    resize();
+        const initMagicEffect = () => {
+            const canvas = document.getElementById('magic-canvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            let particles = [];
+            let mouse = { x: -100, y: -100 };
+            const resize = () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; };
+            window.addEventListener('resize', resize);
+            resize();
+            window.addEventListener('mousemove', (e) => {
+                mouse.x = e.clientX; mouse.y = e.clientY;
+                for(let i=0; i<4; i++) particles.push(new Particle());
+            });
+            class Particle {
+                constructor() {
+                    this.x = mouse.x; this.y = mouse.y;
+                    this.size = Math.random() * 2.5 + 0.5;
+                    this.speedX = Math.random() * 1.5 - 0.75;
+                    this.speedY = Math.random() * 1.5 - 0.75;
+                    this.color = Math.random() > 0.6 ? '#6366f1' : '#c7d2fe';
+                    this.life = 1; this.decay = Math.random() * 0.015 + 0.008;
+                }
+                update() { this.x += this.speedX; this.y += this.speedY; this.life -= this.decay; }
+                draw() { 
+                    ctx.globalAlpha = this.life; ctx.fillStyle = this.color; 
+                    ctx.beginPath(); ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2); ctx.fill(); 
+                }
+            }
+            const animate = () => {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                for (let i = 0; i < particles.length; i++) {
+                    particles[i].update(); particles[i].draw();
+                    if (particles[i].life <= 0) { particles.splice(i, 1); i--; }
+                }
+                requestAnimationFrame(animate);
+            };
+            animate();
+        };
 
-    const animate = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      for (let i = 0; i < particles.length; i++) {
-        particles[i].update(); particles[i].draw();
-        if (particles[i].life <= 0) { particles.splice(i, 1); i--; }
-      }
-      requestAnimationFrame(animate);
-    };
-    animate();
+        const Icon = ({ name, size = 20, className = "" }) => {
+            const icons = {
+                Sparkles: <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L12 3Z"/>,
+                TrendingUp: <React.Fragment><path d="m22 7-8.5 8.5-5-5L2 17"/><path d="M16 7h6v6"/></React.Fragment>,
+                X: <React.Fragment><path d="M18 6 6 18"/><path d="m6 6 12 12"/></React.Fragment>,
+                Menu: <React.Fragment><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></React.Fragment>,
+                Sun: <React.Fragment><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></React.Fragment>,
+                Moon: <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>,
+                ExternalLink: <React.Fragment><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" x2="21" y1="14" y2="3"/></React.Fragment>,
+                Cpu: <React.Fragment><rect width="16" height="16" x="4" y="4" rx="2"/><rect width="6" height="6" x="9" y="9" rx="1"/><path d="M15 2v2"/><path d="M15 20v2"/><path d="M2 15h2"/><path d="M2 9h2"/><path d="M20 15h2"/><path d="M20 9h2"/><path d="M9 2v2"/><path d="M9 20v2"/></React.Fragment>,
+                Lock: <React.Fragment><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></React.Fragment>,
+                FileText: <React.Fragment><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></React.Fragment>,
+                Download: <React.Fragment><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="3" y2="15"/></React.Fragment>,
+                ArrowUpRight: <path d="M7 7h10v10M7 17L17 7"/>,
+                ShieldAlert: <React.Fragment><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></React.Fragment>
+            };
+            return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>{icons[name] || null}</svg>;
+        };
 
-    return () => {
-      window.removeEventListener('resize', resize);
-      window.removeEventListener('mousemove', handleMove);
-    };
-  }, [isLoading]);
+        const LoadingScreen = ({ onComplete }) => {
+            const [percent, setPercent] = useState(0);
+            useEffect(() => {
+                let interval = setInterval(() => {
+                    setPercent(prev => { if (prev >= 100) { clearInterval(interval); setTimeout(onComplete, 800); return 100; } return prev + 5; });
+                }, 40);
+                return () => clearInterval(interval);
+            }, []);
+            return (
+                <div className="fixed inset-0 z-[10005] bg-[#030303] flex flex-col items-center justify-center font-mono text-center">
+                    <div className="scanline"></div>
+                    <div className="relative px-6 text-indigo-600">
+                        <div className="flex items-center justify-center space-x-6 mb-12">
+                            <Icon name="Cpu" size={48} className="animate-pulse shadow-[0_0_15px_rgba(79,70,229,0.5)]" />
+                            <div className="h-[1px] w-20 bg-zinc-800"></div>
+                            <div className="text-4xl font-black tracking-tighter text-white uppercase italic">Diamond</div>
+                        </div>
+                        <div className="text-[12px] tracking-[0.8em] text-indigo-500 mb-6 font-bold uppercase animate-pulse">ACCESS GRANTED</div>
+                        <div className="w-80 h-[1px] bg-zinc-900 relative mx-auto overflow-hidden">
+                            <div className="absolute top-0 left-0 h-full bg-indigo-600 shadow-[0_0_20px_rgba(79,70,229,1)] transition-all duration-200" style={{ width: `${percent}%` }}></div>
+                        </div>
+                        <div className="mt-12 text-[72px] font-black text-white italic opacity-5 leading-none tracking-tighter">{percent.toString().padStart(3, '0')}</div>
+                    </div>
+                </div>
+            );
+        };
 
-  const handleCVUnlock = () => {
-    if (cvPassword === "2026") { setIsCvUnlocked(true); setPasswordError(false); }
-    else { setPasswordError(true); setCvPassword(""); }
-  };
+        const App = () => {
+            const [isLoading, setIsLoading] = useState(true);
+            const [isDark, setIsDark] = useState(true);
+            const [isMenuOpen, setIsMenuOpen] = useState(false);
+            const [isCVModalOpen, setIsCVModalOpen] = useState(false);
+            const [cvPassword, setCvPassword] = useState("");
+            const [isCvUnlocked, setIsCvUnlocked] = useState(false);
+            const [passwordError, setPasswordError] = useState(false);
+            const [scrollProgress, setScrollProgress] = useState(0);
+            const [cursorPos, setCursorPos] = useState({ x: -100, y: -100 });
+            const [imgError, setImgError] = useState(false);
 
-  if (isLoading) {
-    return (
-      <div className="fixed inset-0 z-[10005] bg-[#030303] flex flex-col items-center justify-center font-mono text-center overflow-hidden">
-        <div className="absolute w-full h-2 bg-indigo-600/10 top-0 overflow-hidden">
-            <div className="h-full bg-indigo-600 animate-[scanline_2s_linear_infinite]" style={{width: '20%'}}></div>
-        </div>
-        <div className="relative px-6 text-indigo-600">
-          <div className="flex items-center justify-center space-x-6 mb-12">
-            <Cpu size={48} className="animate-pulse" />
-            <div className="h-[1px] w-20 bg-zinc-800"></div>
-            <div className="text-4xl font-black tracking-tighter text-white uppercase italic">Diamond</div>
-          </div>
-          <div className="text-[12px] tracking-[0.8em] text-indigo-500 mb-6 font-bold uppercase animate-pulse">SYSTEM INITIALIZING</div>
-          <button 
-            onClick={() => setIsLoading(false)}
-            className="mt-8 px-8 py-3 border border-indigo-500/30 text-indigo-500 hover:bg-indigo-500 hover:text-white transition-all rounded-full uppercase text-xs tracking-widest font-black"
-          >
-            Enter Experience
-          </button>
-        </div>
-      </div>
-    );
-  }
+            useEffect(() => {
+                if (isDark) document.documentElement.classList.add('dark');
+                else document.documentElement.classList.remove('dark');
+            }, [isDark]);
 
-  return (
-    <div className={`relative font-sans antialiased selection:bg-indigo-500 selection:text-white ${isDark ? 'bg-[#030303] text-zinc-100' : 'bg-[#fcfcfc] text-zinc-900'}`}>
-      <canvas ref={canvasRef} className="fixed top-0 left-0 w-full h-full pointer-events-none z-[9998]" />
-      
-      {/* Background Noise Effect */}
-      <div className="fixed top-0 left-0 w-full h-full opacity-[0.03] pointer-events-none z-[9999] bg-[url('https://grainy-gradients.vercel.app/noise.svg')]"></div>
+            useEffect(() => {
+                if (!isLoading) initMagicEffect();
+                const handleScroll = () => setScrollProgress(window.scrollY / (document.documentElement.scrollHeight - window.innerHeight));
+                const moveCursor = (e) => setCursorPos({ x: e.clientX, y: e.clientY });
+                window.addEventListener('scroll', handleScroll);
+                window.addEventListener('mousemove', moveCursor);
+                return () => { window.removeEventListener('scroll', handleScroll); window.removeEventListener('mousemove', moveCursor); };
+            }, [isLoading]);
 
-      {/* Progress Bar */}
-      <div className="fixed top-0 left-0 h-1 bg-indigo-600 z-[10001] transition-all" style={{ width: `${scrollProgress * 100}%` }}></div>
+            const handleCVUnlock = () => {
+                if (cvPassword === "2026") { setIsCvUnlocked(true); setPasswordError(false); }
+                else { setPasswordError(true); setCvPassword(""); }
+            };
 
-      {/* Custom Cursor Circle */}
-      <div className="fixed w-8 h-8 border border-indigo-500 rounded-full pointer-events-none z-[10000] transition-transform duration-150 hidden md:block" style={{ left: cursorPos.x - 16, top: cursorPos.y - 16, mixBlendMode: 'difference' }}></div>
+            const coreCareer = [
+                { c: "酷澎台灣 Coupang Taiwan", r: "商城專案副理 Assistant Manager, Catalog Operation Management", p: "2025.06 – 2025.08", d: ["在地化規劃與落地：主導初期商城台灣在地化規劃 彙整本地使用情境與流程差異 制定多項規格與作業指引 標準化本地用語與呈現 協同跨部門推動專案順利落地", "營運管理與制度優化：建立任務 SOP 與檢核表 任務分派與進度追蹤 例行同步與回溯機制 品質抽檢與問題追蹤閉環 實現營運流程可視化與節奏化", "AI 工具與自動化應用：以 Google Sheets + Apps Script (GAS) 建立看板與追蹤系統 運用 AI 進行資料整理 規格檢核與文案模板化 處理重複性任務並進行人工終審把關", "流程可視化管理：運用清單化 看板化及節奏可視化 確保交付項目細節一致並提升團隊工作效率"] },
+                { c: "關鍵評論網 TNL Mediagene", r: "Roomie 國際中文版 負責人暨總編輯", p: "2024.03 – 2025.06", url: "https://www.roomie.tw/", d: ["從 0 規劃國際中文站：主導產品藍圖與落地路線（站點定位 資訊架構 CMS 版位 出刊節奏與品質檢核） 成功完成日文版內容在地化", "爆發性流量增長實績：開站 8 個月內達成單月 1.38M PV 66 萬 UV 透過優化技術 SEO 確保網站內容每週穩定破百篇登上 Google Discover", "商務獲利模型達成：百萬流量基礎下實現單月廣告營收 12 萬 媒體導購營收 30-40 萬 (總月營收逾 40 萬)", "社群策略與影響力：建立選題矩陣與週迭代回溯機制 啟動 Threads 經營於 5 個月內累積總瀏覽突破 200 萬次"] },
+                { c: "寶利拾股份有限公司 iCook・TNL Mediagene", r: "內容營運產品經理 Content Operation Product Manager", p: "2023.10 – 2025.06", d: ["媒體矩陣監管：監管集團全媒體矩陣 包含：愛料理、愛料理生活誌、電影神搜、Roomie 國際中文版、iGood、歐搜哇、every little d 之 SEO 報表及技術 SEO 優化 PM", "網站營運規劃：管理旗下媒體產品網站營運 策展 企劃與商務合作 協助集團內部跨部門產品 management 流程協調 策略擬定與業務機會開發"] },
+                { c: "應援科技股份有限公司", r: "內容總監 Head of Content & PM", p: "2022.11 – 2023.09", d: ["內容行銷執行：主導內容企劃策劃與撰寫 成功主導專案管理及跨部門溝通 顯著提升流程效率", "社群經營增長：操作專案社群成功提升粉絲數成長 專攻限時動態即時互動與品牌印象建立", "外部合作與贊助：主導與外部夥伴專業溝通 負責贊助協商 活動策劃與執行 成功爭取包含「大港開唱」、「Generative AI 年會」等多筆合作贊助"] },
+                { c: "博客來數位科技股份有限公司", r: "OKAPI 閱讀生活誌 網站編輯 Web/Content Editor & PM", p: "2020.01 – 2022.05", url: "https://okapi.books.com.tw/", d: ["行銷文案策劃：負責博客來主站 OKAPI 主站 每月會員專函 IG 等跨平台內容行銷文案 書評與出版品專題撰寫", "UI/UX 優化管理：根據數據管理首頁介面元件與廣告曝光呈現 重新設計電子報登入介面與後台管理系統以提升用戶體驗", "線上策展與專案管理：策劃年度大型專案與公司內外部單位協作 設計包裝主站功能推廣", "外部溝通與內容授權：擔任團隊對外內容授權負責人 處理線上線下授權簽約達百次以上"] },
+                { c: "雄獅旅遊 Lion Travel", r: "主題旅遊部 產品企劃 Product Planning Specialist", p: "2019.11 – 2019.12", d: ["專案管理優化：協助優化熱門旅遊產品（紐澳非） 達成降低售價但不減質量的開發目標", "產品文案美化：撰寫適切行程文案描述並重新設計網頁視覺呈現 提升使用者體驗"] },
+                { c: "誠品生活 Eslite Spectrum", r: "商品行銷 & 《時光》編輯 Specialist of Retail MKT", p: "2018.04 – 2018.09", d: ["活動策展管理：主導誠品生活敦南店活動策展 負責企劃撰寫 跨部門溝通至新聞稿發佈與展覽維護", "整合行銷社群：包含社群主題式策略規劃 商品與人物攝影 官網後台更新與專欄撰寫", "刊物編輯監製：擔任誠品生活主題式刊物《時光》編輯 獨立執行訪問 單元規劃 選品及展覽場刊製作"] }
+            ];
 
-      {/* Navigation */}
-      <nav className={`fixed top-0 w-full z-[1000] px-6 md:px-12 py-6 flex justify-between items-center backdrop-blur-3xl border-b transition-all ${isDark ? 'bg-[#030303]/80 border-zinc-800/50' : 'bg-[#fafafa]/80 border-zinc-200/50'}`}>
-        <div className="text-xl md:text-2xl font-black tracking-tighter uppercase cursor-pointer">
-          Diamond <span className="text-indigo-600">Feng</span>
-        </div>
-        
-        <div className="hidden lg:flex space-x-12 text-[11px] font-black tracking-[0.3em] uppercase items-center opacity-60">
-          <a href="#about" className="hover:text-indigo-600 transition-all">Summary</a>
-          <a href="#core-career" className="hover:text-indigo-600 transition-all">Career</a>
-          <a href="#brand" className="hover:text-indigo-600 transition-all">Brand</a>
-          <button onClick={() => setIsCVModalOpen(true)} className="flex items-center space-x-2 text-indigo-500">
-            <FileText size={16} /><span>Full CV</span>
-          </button>
-          <a href="#contact" className="px-8 py-2.5 bg-indigo-600 text-white rounded-full font-bold hover:bg-indigo-700 transition-all shadow-xl">Contact</a>
-        </div>
+            const ventures = [
+                { c: "nuva", sub: "AI 教育網紅品牌", url: "https://www.meetnuva.com/", r: "商務開發總監 Business Development Director", p: "2025.09 – 2026.01", d: ["亞太跨國 0 到 1 陌生開發：一個月內達成泰國實體 AI 講座（40人）、香港最大線上 AI 教育公司聯名講座（80人）及 XChange 團隊合作佈局", "向誠品吉隆坡 (Eslite KL) 行銷團隊提案 AI 教育月書籍策展 規劃每週誠品講堂 並獲得天下換日線合作意向", "顧問式銷售溢價：將傳產客戶單日工作坊需求 顧問轉化為 3.5 日深度 AI 課程加發表活動 合約案源價值從 10 萬提升至 30 萬以上 (300% 溢價達成)", "戰略對接天下換日線爭取專屬專欄及網站專訪 牽線關鍵評論網《商業內幕》促使總編引薦基隆市長關注品牌相關訪問議題", "一週內成功談成 Red Bull 野營用品與花藝贊助 廠商追加 10 箱贊助量 引薦創辦人擔任 2026 Red Bull Basement 全球競賽台灣區評審"] },
+                { c: "couchspace", sub: "沙發心理", url: "https://www.thecouchspace.com/", r: "業務經理 Business Manager", p: "2025.09 – 2026.01", d: ["B2B 年度福利方案規劃：與 H2U 永悅健康共同策劃 緯穎科技 佳能台灣 (Canon) 2026 年度員工福利專案 負責價值鏈設計", "獨立規劃台達電年度方案 並針對 HR 族群主導執行專屬 HRV 檢測活動 建立品牌與企業之深層連結", "牽線並談成 天下學習 x couchspace 及 Hahow x couchspace 年度深度合作方案 (包含國際書展專屬方案與訂閱影音課程) 拓展變現渠道", "系統化整頓公司四年累積之名單 並透過陌生開發建立全新專業心理師 芳療師資與外部商務合作資源庫 活化公司資產"] }
+            ];
 
-        <div className="flex items-center space-x-4">
-          <button onClick={() => setIsDark(!isDark)} className="p-2.5 bg-zinc-500/10 rounded-full text-indigo-600 transition-all">
-            {isDark ? <Sun size={20} /> : <Moon size={20} />}
-          </button>
-          <button onClick={() => setIsMenuOpen(true)} className="lg:hidden text-indigo-600"><Menu size={26} /></button>
-        </div>
-      </nav>
+            const brandData = { c: "Tokyo Edit", sub: "自媒體", r: "創辦人暨總編輯 Founder & Editor-in-Chief", p: "2025.04 – 至今", url: "https://www.threads.com/@tokyoedittt", d: ["品牌建立 3 天突破 2 萬粉絲 10 天內突破 3 萬粉絲 (目前 3.3 萬) 單篇最高紀錄達 91 萬次瀏覽與 1.8 萬次愛心 每月穩定互動 2 萬次以上 實現爆發性增長", "移植 Roomie AI 內容工作流 (資訊搜集 多語翻譯 重構 數據分析 SEO) 實現高頻且高質量的內容產出", "媒體商務模式實踐：與日本代購品牌選享家建立專業分工模式，主導品牌調性與選品策略，首月達成與日本金鳥 (Kincho)的合作", "高階品牌商業合作：首月即達成日本百年品牌「日本金鳥 (Kincho)」業配合作；後續接連受邀與 HOLA x 日本龜之子束子、中台興化學-鱷魚蚊香、Cure Care (安炫曜) 等企業執行專案與團購。"] };
 
-      {/* Hero Section */}
-      <section className="min-h-screen flex flex-col justify-center px-6 md:px-24 relative pt-32 pb-24 overflow-hidden">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-indigo-600/5 blur-[120px] rounded-full"></div>
-        <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-16 items-center">
-          <div className="lg:col-span-8 text-center lg:text-left">
-            <div className="flex items-center justify-center lg:justify-start space-x-3 mb-8 text-indigo-600">
-              <Sparkles size={20} />
-              <span className="text-[10px] font-black tracking-[0.6em] uppercase">AI CONTENT ARCHITECT</span>
-            </div>
-            <h1 className="text-[12vw] md:text-[8vw] font-black leading-[0.85] tracking-tighter mb-12 uppercase">
-              馮興怡 <br />
-              <span className="italic font-serif text-transparent bg-clip-text bg-gradient-to-r from-zinc-500 to-indigo-600">Diamond Feng</span>
-            </h1>
-            <p className="text-2xl md:text-4xl text-zinc-500 font-light mb-16 uppercase leading-tight">
-              內容營運與增長專家 <br/>
-              <span className="text-indigo-600 font-bold italic font-serif">AI-Driven Growth</span>
-            </p>
-            <div className="flex flex-wrap justify-center lg:justify-start gap-6">
-              <a href="#contact" className="px-12 py-5 bg-indigo-600 text-white text-xs font-black tracking-[0.2em] uppercase rounded-sm hover:-translate-y-1 transition-all">Connect</a>
-              <a href="#brand" className="px-12 py-5 border border-zinc-500/30 text-xs font-black tracking-[0.2em] uppercase rounded-sm hover:bg-zinc-500/10 transition-all">Projects</a>
-            </div>
-          </div>
-          <div className="lg:col-span-4 flex justify-center">
-            <div className="relative w-64 h-80 md:w-80 md:h-[480px] bg-zinc-800 border-[12px] border-white dark:border-zinc-900 shadow-2xl rotate-3 hover:rotate-0 transition-transform duration-700 overflow-hidden">
-                <div className="absolute inset-0 flex items-center justify-center text-4xl font-serif italic text-zinc-700">Diamond</div>
-                <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=1974&auto=format&fit=crop" className="w-full h-full object-cover opacity-80" alt="Profile" />
-            </div>
-          </div>
-        </div>
-      </section>
+            const roots = [
+                { t: "香港輔仁媒體《爾雅集》", d: "專欄作者 (2015.02 – 2017.07)：發表書評 歌詞評析及散文創作" },
+                { t: "2B Magazine", d: "創辦人暨總編輯 (2016.02 – 2017.03)：組織管理 4 人團隊進行雜誌發想 採訪與撰稿 運用社群建立電商一條龍服務" },
+                { t: "MPlus 云閱讀", d: "專欄作者 (2014.10 – 2015.10)：定期發表書評與散文創作" },
+                { t: "第五十屆金馬影展", d: "種子評審 (2013.11)：獲選金馬影展種子評審 參與觀眾票選最佳影片獎項評選" }
+            ];
 
-      {/* Summary Section - 文字放大重點 */}
-      <section id="about" className={`py-48 px-6 md:px-24 border-y ${isDark ? 'bg-[#060606] border-zinc-800' : 'bg-zinc-50 border-zinc-200'}`}>
-        <div className="max-w-6xl mx-auto text-center">
-          <h2 className="text-[10px] font-black tracking-[1em] text-indigo-600 mb-20 uppercase">EXECUTIVE SUMMARY</h2>
-          
-          <h3 className="text-4xl md:text-6xl lg:text-7xl font-serif italic leading-tight mb-24 tracking-tight">
-            橫跨實體零售 電商與媒體領域逾 10 年經驗 <br/>
-            <span className="text-indigo-600">AI 工作流將分散資訊轉化為高增長方案</span>
-          </h3>
+            return (
+                <div className="relative font-sans antialiased text-zinc-900 dark:text-zinc-100 selection:bg-indigo-500 selection:text-white">
+                    {isLoading && <LoadingScreen onComplete={() => setIsLoading(false)} />}
+                    <div className="noise"></div>
+                    <div className="cursor-circle hidden md:block" style={{ left: cursorPos.x - 16, top: cursorPos.y - 16 }}></div>
+                    <div className="fixed top-0 left-0 h-1 bg-indigo-600 z-[10001] transition-all duration-75" style={{ width: `${scrollProgress * 100}%` }}></div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-16 md:gap-24 text-left">
-            {/* 放大後的文字區塊 */}
-            <p className="text-2xl md:text-3xl lg:text-4xl leading-relaxed text-zinc-500 dark:text-zinc-400 font-light border-l-4 border-indigo-600/30 pl-8">
-              具備橫跨實體零售、旅遊、電商與媒體領域超過 <span className="text-indigo-600 font-bold">10 年</span>的豐富經驗，曾於大型企業、外商與新創公司發揮影響力，親自參與從採訪、寫作到網站及內容產品規劃等全流程，將多方期待整合為具體可執行的內容方案。
-            </p>
-            <p className="text-2xl md:text-3xl lg:text-4xl leading-relaxed text-zinc-500 dark:text-zinc-400 font-light border-l-4 border-emerald-600/30 pl-8">
-              善於發掘潛在問題並提出切實可行的解決策略，曾協助優化網站架構與內容，於一年內達成單月突破 <span className="text-emerald-500 font-bold">1.38M PV</span> 並建立高效獲利模型，精通利用 <span className="bg-indigo-500/10 px-2 text-indigo-500 font-mono">GAS + LLM</span> 提升營運效率。
-            </p>
-          </div>
-        </div>
-      </section>
+                    <nav className="fixed top-0 w-full z-[1000] px-6 md:px-12 py-6 flex justify-between items-center bg-[#fafafa]/80 dark:bg-[#030303]/80 backdrop-blur-3xl border-b border-zinc-200/50 dark:border-zinc-800/50 transition-all">
+                        <div className="text-xl md:text-2xl font-black tracking-tighter uppercase transition-colors hover:text-indigo-600 cursor-pointer">Diamond <span className="text-indigo-600">Feng</span></div>
+                        <div className="hidden lg:flex space-x-12 text-[13px] font-black tracking-[0.3em] uppercase items-center text-zinc-900 dark:text-zinc-400">
+                            <a href="#about" className="hover:text-indigo-600 transition-all opacity-60 hover:opacity-100">Summary</a>
+                            <a href="#core-career" className="hover:text-indigo-600 transition-all opacity-60 hover:opacity-100">Career</a>
+                            <a href="#brand" className="hover:text-indigo-600 transition-all opacity-60 hover:opacity-100">Brand</a>
+                            <a href="#ventures" className="hover:text-indigo-600 transition-all opacity-60 hover:opacity-100">Consulting</a>
+                            <a href="#academic" className="hover:text-indigo-600 transition-all opacity-60 hover:opacity-100 font-bold">Education</a>
+                            <button onClick={() => {setIsCVModalOpen(true); setPasswordError(false);}} className="flex items-center space-x-2 text-indigo-500 hover:text-indigo-400 transition-colors opacity-80 group"><Icon name="FileText" size={16} className="group-hover:scale-110 transition-transform" /><span>Full CV</span></button>
+                            <a href="#contact" className="px-8 py-2.5 bg-indigo-600 text-white rounded-full font-bold hover:bg-indigo-700 transition-all shadow-xl hover:-translate-y-0.5 active:translate-y-0 text-white">Contact Me</a>
+                        </div>
+                        <div className="flex items-center space-x-4">
+                            <button onClick={() => setIsDark(!isDark)} className="p-2.5 bg-zinc-200/50 dark:bg-zinc-800/50 rounded-full text-indigo-600 shadow-sm transition-all hover:scale-110">{isDark ? <Icon name="Sun" size={20} /> : <Icon name="Moon" size={20} />}</button>
+                            <button onClick={() => setIsMenuOpen(true)} className="lg:hidden text-indigo-600"><Icon name="Menu" size={26} /></button>
+                        </div>
+                    </nav>
 
-      {/* Metrics Section */}
-      <section className="py-24 px-6 md:px-24 bg-zinc-900 text-white overflow-hidden">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-          <div className="md:col-span-2 p-12 bg-white/5 border border-white/10 rounded-2xl relative group">
-            <TrendingUp size={200} className="absolute -right-10 -bottom-10 opacity-5 group-hover:opacity-10 transition-opacity" />
-            <span className="text-xs font-black tracking-widest text-indigo-400 uppercase">Growth Impact</span>
-            <div className="text-8xl md:text-[10rem] font-black tracking-tighter mt-4">1.38M</div>
-            <p className="text-xl opacity-50 uppercase tracking-tighter">Monthly Page Views</p>
-          </div>
-          <div className="p-12 bg-indigo-600 rounded-2xl flex flex-col justify-center">
-            <div className="text-5xl font-black italic">33K+</div>
-            <p className="text-sm uppercase tracking-widest opacity-80 mt-4">Followers in 10 Days</p>
-          </div>
-          <div className="p-12 bg-zinc-800 rounded-2xl border border-white/5 flex flex-col justify-center">
-            <div className="text-5xl font-black text-emerald-500">300%</div>
-            <p className="text-sm uppercase tracking-widest opacity-50 mt-4">Value Premium Scaling</p>
-          </div>
-        </div>
-      </section>
+                    {/* CV Modal */}
+                    {isCVModalOpen && (
+                        <div className="fixed inset-0 z-[10006] flex items-center justify-center p-6">
+                            <div className="absolute inset-0 bg-black/80 backdrop-blur-md animate-in fade-in duration-500" onClick={() => {setIsCVModalOpen(false); setIsCvUnlocked(false); setCvPassword(""); setPasswordError(false);}}></div>
+                            <div className="relative bg-[#fafafa] dark:bg-[#0a0a0a] border border-zinc-200 dark:border-zinc-800 w-full max-w-md p-10 rounded-2xl shadow-2xl animate-in fade-in zoom-in-95 duration-300 text-center">
+                                <button onClick={() => {setIsCVModalOpen(false); setIsCvUnlocked(false); setCvPassword(""); setPasswordError(false);}} className="absolute top-6 right-6 text-zinc-400 hover:text-zinc-100 transition-colors"><Icon name="X" size={24} /></button>
+                                {!isCvUnlocked ? (
+                                    <div>
+                                        <div className="w-16 h-16 bg-indigo-500/10 text-indigo-500 rounded-full flex items-center justify-center mx-auto mb-6"><Icon name="Lock" size={32} /></div>
+                                        <h3 className="text-2xl font-black uppercase tracking-tighter mb-4 text-zinc-900 dark:text-white">Resume Vault</h3>
+                                        <p className="text-zinc-500 dark:text-zinc-400 text-sm mb-8 leading-relaxed">為保護 Diamond 的個資，完整版 PDF 僅開放專業合作洽談使用。<br/>請輸入專屬訪問碼或直接聯繫 Diamond 獲取權限。</p>
+                                        <div className="space-y-4">
+                                            <input type="password" placeholder="請輸入專屬訪問碼" value={cvPassword} onChange={(e) => {setCvPassword(e.target.value); setPasswordError(false);}} onKeyPress={(e) => e.key === 'Enter' && handleCVUnlock()} className={`w-full bg-zinc-100 dark:bg-zinc-900 border ${passwordError ? 'border-red-500 text-red-500' : 'border-zinc-200 dark:border-zinc-800'} rounded-lg px-4 py-4 text-center text-lg tracking-[0.5em] focus:outline-none focus:border-indigo-500 transition-colors placeholder:tracking-normal placeholder:text-sm text-zinc-900 dark:text-white`} />
+                                            {passwordError && <div className="flex items-center justify-center space-x-2 text-red-500 text-xs font-bold animate-pulse"><Icon name="ShieldAlert" size={14} /><span>訪問碼錯誤，請重新輸入或聯繫作者</span></div>}
+                                            <button onClick={handleCVUnlock} className="w-full bg-indigo-600 text-white font-bold py-4 rounded-lg hover:bg-indigo-700 transition-all shadow-lg active:scale-95">確認解鎖</button>
+                                            <div className="pt-6 border-t border-zinc-200 dark:border-zinc-800"><a href="mailto:fengdiamond@gmail.com?subject=Request for Diamond's Full CV&body=Hi Diamond, I would like to request access to your full PDF resume. Thank you." className="text-xs font-bold text-zinc-400 hover:text-indigo-500 uppercase tracking-widest transition-colors flex items-center justify-center">聯繫獲取權限 <Icon name="ArrowUpRight" size={14} className="ml-2" /></a></div>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div>
+                                        <div className="w-16 h-16 bg-emerald-500/10 text-emerald-500 rounded-full flex items-center justify-center mx-auto mb-6"><Icon name="Download" size={32} /></div>
+                                        <h3 className="text-2xl font-black uppercase tracking-tighter mb-4 text-zinc-900 dark:text-white">Access Granted</h3>
+                                        <p className="text-zinc-500 dark:text-zinc-400 text-sm mb-8 leading-relaxed">驗證成功，點擊下方按鈕即可下載最新版完整履歷檔案。</p>
+                                        <a href="Diamond_H_Feng_Resume_2026.pdf" download="Diamond_H_Feng_Resume_2026.pdf" target="_blank" className="inline-flex items-center justify-center w-full bg-emerald-600 text-white font-bold py-4 rounded-lg hover:bg-emerald-700 transition-all shadow-lg active:scale-95"><Icon name="Download" size={18} className="mr-2" /> 下載完整版 PDF</a>
+                                        <p className="mt-6 text-[10px] text-zinc-500 italic opacity-60 uppercase font-mono tracking-widest">Last Updated: 2026.01.11</p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
 
-      {/* CV Modal */}
-      {isCVModalOpen && (
-        <div className="fixed inset-0 z-[10006] flex items-center justify-center p-6 backdrop-blur-md">
-          <div className="absolute inset-0 bg-black/80" onClick={() => setIsCVModalOpen(false)}></div>
-          <div className={`relative w-full max-w-md p-10 rounded-2xl border shadow-2xl transition-all ${isDark ? 'bg-[#0a0a0a] border-zinc-800' : 'bg-white border-zinc-200'}`}>
-            <button onClick={() => setIsCVModalOpen(false)} className="absolute top-6 right-6 opacity-50 hover:opacity-100"><X size={24} /></button>
-            {!isCvUnlocked ? (
-              <div className="text-center">
-                <div className="w-16 h-16 bg-indigo-500/10 text-indigo-500 rounded-full flex items-center justify-center mx-auto mb-6"><Lock size={32} /></div>
-                <h3 className="text-2xl font-black mb-4 uppercase">Resume Vault</h3>
-                <p className="text-sm opacity-60 mb-8">請輸入專屬訪問碼以獲取完整版 PDF</p>
-                <input 
-                  type="password" 
-                  value={cvPassword}
-                  onChange={(e) => setCvPassword(e.target.value)}
-                  placeholder="Password"
-                  className={`w-full bg-zinc-500/10 border ${passwordError ? 'border-red-500' : 'border-zinc-500/20'} rounded-lg px-4 py-4 text-center tracking-[0.5em] focus:outline-none mb-4`} 
-                />
-                {passwordError && <p className="text-red-500 text-xs mb-4">訪問碼錯誤</p>}
-                <button onClick={handleCVUnlock} className="w-full bg-indigo-600 py-4 rounded-lg font-bold">Unlock</button>
-              </div>
-            ) : (
-              <div className="text-center">
-                <div className="w-16 h-16 bg-emerald-500/10 text-emerald-500 rounded-full flex items-center justify-center mx-auto mb-6"><Download size={32} /></div>
-                <h3 className="text-2xl font-black mb-4">Access Granted</h3>
-                <p className="text-sm opacity-60 mb-8">您可以下載最新版履歷了</p>
-                <button className="w-full bg-emerald-600 py-4 rounded-lg font-bold flex items-center justify-center gap-2">
-                  <Download size={18} /> Download PDF
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+                    {/* Hero Section */}
+                    <section className="min-h-screen flex flex-col justify-center px-6 md:px-24 relative pt-32 pb-24 overflow-hidden text-center lg:text-left">
+                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[900px] bg-indigo-600/5 blur-[160px] rounded-full"></div>
+                        <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-16 items-center reveal">
+                            <div className="lg:col-span-8">
+                                <div className="flex items-center justify-center lg:justify-start space-x-3 mb-10 text-indigo-600"><Icon name="Sparkles" size={22} /><span className="text-[11px] font-black tracking-[0.6em] uppercase font-bold">AI CONTENT ARCHITECT & STRATEGIST</span></div>
+                                <h1 className="text-[14vw] md:text-[10vw] font-black leading-[0.8] tracking-tighter mb-12 text-zinc-900 dark:text-zinc-100 uppercase select-none">馮興怡 <br /><span className="italic serif text-transparent bg-clip-text bg-gradient-to-r from-zinc-900 to-zinc-500 dark:from-white dark:to-zinc-600 tracking-tighter uppercase">Diamond Feng</span></h1>
+                                <p className="text-2xl md:text-5xl lg:text-6xl text-zinc-700 dark:text-zinc-400 font-light max-w-3xl mb-16 leading-tight uppercase text-zinc-900 dark:text-zinc-400">內容營運與增長專家 <br/><span className="text-indigo-600 font-bold italic serif">AI-Driven Content Ops & Growth</span></p>
+                                <div className="flex flex-wrap justify-center lg:justify-start gap-5 md:gap-10">
+                                    <a href="#contact" className="w-full md:w-auto text-center bg-indigo-600 hover:bg-indigo-700 text-white px-16 py-6 text-sm font-black tracking-widest uppercase transition-all shadow-2xl rounded-sm hover:-translate-y-1 text-white font-bold">Connect With Me</a>
+                                    <a href="#brand" className="w-full md:w-auto text-center border-2 border-zinc-300 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-900 px-16 py-6 text-sm font-black tracking-widest uppercase transition-all rounded-sm font-bold">View Projects</a>
+                                </div>
+                            </div>
+                            <div className="lg:col-span-4 flex justify-center lg:justify-end">
+                                <div className="photo-container photo-float relative w-72 h-96 md:w-96 md:h-[550px] lg:w-[450px] lg:h-[600px] border-[16px] border-white dark:border-zinc-900 shadow-2xl bg-zinc-200 dark:bg-zinc-800">
+                                    {!imgError ? (<img src="個人照_Diamond_1.jpg" alt="Diamond Feng" className="photo-img w-full h-full object-cover" onError={() => setImgError(true)} />) : (<div className="w-full h-full flex items-center justify-center italic text-white font-serif text-3xl bg-indigo-950 uppercase tracking-tighter">Diamond Feng</div>)}
+                                </div>
+                            </div>
+                        </div>
+                    </section>
 
-      {/* Footer & Visitor Count */}
-      <footer id="contact" className="py-32 px-6 md:px-24 text-center relative overflow-hidden">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[20vw] font-black text-indigo-600/5 italic pointer-events-none uppercase">DIAMOND</div>
-        <div className="relative z-10">
-          <h2 className="text-6xl md:text-8xl font-black tracking-tighter mb-12 italic uppercase">Let's scale <br/><span className="text-indigo-600">your story</span></h2>
-          <a href="mailto:fengdiamond@gmail.com" className="text-2xl md:text-5xl font-black tracking-tighter hover:text-indigo-600 transition-all underline underline-offset-8 decoration-indigo-600/20">fengdiamond@gmail.com</a>
-          
-          <div className="mt-32 pt-12 border-t border-zinc-500/10 flex flex-col md:flex-row justify-between items-center gap-8 text-[10px] font-black tracking-[0.4em] opacity-40">
-            <span>© 2026 DIAMOND FENG. ALL RIGHTS RESERVED.</span>
-            <div className="flex items-center gap-4 bg-indigo-500/5 px-6 py-3 rounded-full border border-indigo-500/10">
-              <span className="text-indigo-500">TOTAL VISITS: {visitorCount.toLocaleString()}</span>
-            </div>
-            <span>TAIPEI, TAIWAN</span>
-          </div>
-        </div>
-      </footer>
+                    {/* Summary Section */}
+                    <section id="about" className="py-48 md:py-64 px-6 md:px-24 bg-zinc-100/50 dark:bg-[#060606] border-y border-zinc-200 dark:border-zinc-800 text-center text-zinc-900 dark:text-white">
+                        <div className="max-w-6xl mx-auto">
+                            <h2 className="text-[11px] font-black tracking-[1em] text-indigo-600 mb-20 uppercase opacity-60 font-bold">EXECUTIVE SUMMARY</h2>
+                            <p className="text-3xl md:text-5xl lg:text-7xl font-serif italic leading-tight mb-20 tracking-tight">橫跨實體零售 電商與媒體領域逾 10 年經驗 <br/>擅長透過 AI 工作流將分散資訊轉化為高增長方案</p>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-20 body-text text-zinc-500 dark:text-zinc-400 font-light text-left md:text-center px-4 leading-relaxed lg:px-20">
+                                <p>具備橫跨實體零售 旅遊 電商與媒體領域超過 10 年的豐富經驗 曾於大型企業 外商與新創公司發揮影響力 親自參與從採訪 寫作到網站及內容產品規劃等全流程 並透過跨部門溝通協作 將分散資訊與多方期待整合為具體可執行的內容方案</p>
+                                <p>善於發掘潛在問題並提出切實可行的解決策略 曾協助優化網站架構與內容 提升用戶體驗與流量 於一年內達成單月突破 1.38M PV 並建立高效獲利模型 精通利用 AI 工作流與自動化技術如 GAS + LLM 提升營運效率 並具備強大的陌生開發與亞太區國際商務對接能力</p>
+                            </div>
+                        </div>
+                    </section>
 
-      {/* Mobile Menu */}
-      {isMenuOpen && (
-        <div className="fixed inset-0 z-[10002] bg-[#030303] p-10 flex flex-col justify-center text-white italic font-black">
-          <button onClick={() => setIsMenuOpen(false)} className="absolute top-10 right-10"><X size={40} /></button>
-          <div className="space-y-12 text-6xl tracking-tighter border-l-8 border-indigo-600 pl-8">
-            <a href="#about" onClick={() => setIsMenuOpen(false)} className="block uppercase">Summary</a>
-            <a href="#core-career" onClick={() => setIsMenuOpen(false)} className="block uppercase">Career</a>
-            <a href="#brand" onClick={() => setIsMenuOpen(false)} className="block uppercase">Brand</a>
-            <a href="#contact" onClick={() => setIsMenuOpen(false)} className="block text-indigo-600 uppercase">Connect</a>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
+                    {/* PERSONAL MEDIA BRAND */}
+                    <section id="brand" className="py-32 md:py-56 px-6 md:px-24 bg-white dark:bg-[#030303] text-zinc-900 dark:text-white">
+                        <div className="max-w-6xl mx-auto">
+                            <div className="flex items-center space-x-8 mb-24 opacity-40 text-indigo-600"><h2 className="text-[12px] font-black tracking-[1em] uppercase font-bold leading-none text-left">PERSONAL MEDIA BRAND</h2><div className="h-px flex-1 bg-indigo-600/20"></div></div>
+                            <div className="bg-zinc-50 dark:bg-zinc-900/30 p-12 md:p-20 border border-indigo-600/10 rounded-sm relative overflow-hidden group shadow-xl">
+                                <div className="absolute top-0 right-0 p-8 opacity-[0.03] text-indigo-500 transition-opacity"><Icon name="TrendingUp" size={300} /></div>
+                                <div className="relative z-10">
+                                    <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end mb-16 gap-10 text-left">
+                                        <div className="max-w-4xl">
+                                            <div className="text-[10px] font-black text-indigo-500 mb-6 tracking-[0.5em] uppercase italic underline decoration-2 underline-offset-[12px]">Continuous Operation</div>
+                                            <h4 className="text-6xl md:text-8xl font-black tracking-tighter uppercase leading-none mb-6">
+                                                <a href={brandData.url} target="_blank" rel="noopener noreferrer" className="hover:text-indigo-600 transition-colors inline-flex flex-col group/link">
+                                                    <span>{brandData.c}</span>
+                                                    <span className="text-3xl md:text-5xl opacity-40 mt-2 block lowercase font-serif italic">{brandData.sub} <Icon name="ExternalLink" size={24} className="inline ml-3 opacity-30 group-hover/link:opacity-100 transition-all" /></span>
+                                                </a>
+                                            </h4>
+                                            <p className="text-xl font-bold italic text-zinc-500 mb-10 uppercase tracking-widest leading-none">個人自媒體品牌 | 2025.04 – 至今</p>
+                                        </div>
+                                        <div className="text-3xl font-mono text-indigo-500 font-bold tracking-tighter bg-indigo-500/10 px-6 py-3 rounded-full whitespace-nowrap">33K+ FANS</div>
+                                    </div>
+                                    <ul className="grid grid-cols-1 md:grid-cols-2 gap-10 text-left">{brandData.d.map((bullet, idx) => (<li key={idx} className="list-bullet body-text text-zinc-600 dark:text-zinc-400 font-light text-lg md:text-xl leading-relaxed">{bullet}</li>))}</ul>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
 
-export default App;
+                    {/* STRATEGIC CONSULTING */}
+                    <section id="ventures" className="py-32 px-6 md:px-24 bg-zinc-50 dark:bg-zinc-950 border-y border-zinc-200 dark:border-zinc-800 text-center">
+                        <div className="max-w-7xl mx-auto text-zinc-900 dark:text-zinc-100 uppercase font-bold">
+                            <div className="flex items-center space-x-10 mb-20 opacity-40 text-zinc-400"><h2 className="text-[12px] font-black tracking-[1em] uppercase font-bold leading-none uppercase">STRATEGIC CONSULTING</h2><div className="h-px flex-1 bg-zinc-800"></div></div>
+                            <p className="max-w-5xl text-2xl md:text-3xl font-serif italic text-zinc-500 dark:text-zinc-400 mb-24 leading-relaxed mx-auto uppercase font-light">以顧問角色協助 AI 教育網紅與心理健康新創於商務與媒體端建立連結 以下專案均為 0 到 1 陌生開發 (Cold Outreach) 負責戰略規劃 資源媒合與 Milestone 交付</p>
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 text-left text-zinc-900 dark:text-white">
+                                {ventures.map((v, i) => (
+                                    <div key={i} className="p-12 md:p-16 border border-zinc-200 dark:border-zinc-800 hover:border-indigo-600 transition-all group bg-white dark:bg-black shadow-2xl rounded-sm">
+                                        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-16 gap-8">
+                                            <div>
+                                                <div className="text-[10px] font-black text-indigo-600 mb-6 tracking-[0.5em] uppercase italic underline decoration-2 underline-offset-[12px]">Project Deployment</div>
+                                                <h4 className="text-4xl md:text-5xl font-black tracking-tighter mb-4 flex flex-col normal-case">
+                                                    <a href={v.url} target="_blank" rel="noopener noreferrer" className="hover:text-indigo-600 transition-colors inline-flex flex-col group/link">
+                                                        <span className="lowercase font-bold tracking-tighter text-indigo-600 dark:text-indigo-500">{v.c}</span>
+                                                        <span className="text-xl md:text-2xl opacity-40 mt-2 font-serif italic uppercase">{v.sub} <Icon name="ExternalLink" size={20} className="inline ml-2 opacity-30 group-hover/link:opacity-100 transition-all" /></span>
+                                                    </a>
+                                                </h4>
+                                                <p className="text-xl font-bold italic text-zinc-500 dark:text-zinc-400 uppercase tracking-widest leading-none">{v.r}</p>
+                                            </div>
+                                            <div className="text-sm font-black text-zinc-300 dark:text-zinc-700 tracking-widest">{v.p}</div>
+                                        </div>
+                                        <ul className="space-y-8 text-zinc-600 dark:text-zinc-400">{v.d.map((bullet, idx) => (<li key={idx} className="list-bullet body-text font-light text-xl md:text-2xl leading-relaxed">{bullet}</li>))}</ul>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </section>
+
+                    {/* Core Career Track */}
+                    <section id="core-career" className="py-32 md:py-56 px-6 md:px-24 text-left">
+                        <div className="max-w-5xl mx-auto text-zinc-900 dark:text-zinc-100">
+                            <h3 className="text-6xl md:text-9xl font-black tracking-tighter mb-48 uppercase italic text-center lg:text-left">Core <br/><span className="text-indigo-600 tracking-normal">Career Track</span></h3>
+                            <div className="space-y-48 md:space-y-64">
+                                {coreCareer.map((job, i) => (
+                                    <div key={i} className="group grid grid-cols-1 lg:grid-cols-12 gap-10 md:gap-20 border-l-2 border-zinc-100 dark:border-zinc-800 pl-8 lg:pl-0 lg:border-none text-left">
+                                        <div className="lg:col-span-4 text-left">
+                                            <div className="text-sm font-black text-indigo-600 mb-6 italic tracking-widest leading-none">{job.p}</div>
+                                            <div className="text-4xl md:text-5xl font-black tracking-tighter uppercase group-hover:text-indigo-600 transition-colors leading-tight mb-4 text-zinc-900 dark:text-zinc-100 text-left">
+                                                {job.url ? (<a href={job.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center hover:underline decoration-indigo-600/30">{job.c} <Icon name="ExternalLink" size={24} className="ml-3 opacity-30 group-hover:opacity-100 transition-all" /></a>) : job.c}
+                                            </div>
+                                            <div className="text-base md:text-lg font-bold italic text-zinc-500 dark:text-zinc-500 uppercase tracking-widest leading-snug">{job.r}</div>
+                                        </div>
+                                        <div className="lg:col-span-8 lg:border-l-[1px] lg:border-zinc-200 lg:dark:border-zinc-800 lg:pl-20 text-left text-zinc-600 dark:text-zinc-400">
+                                            <ul className="space-y-6">{job.d.map((bullet, idx) => (<li key={idx} className="list-bullet body-text font-light leading-relaxed">{bullet}</li>))}</ul>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </section>
+
+                    {/* Metrics Section */}
+                    <section id="growth" className="py-24 md:py-48 px-6 md:px-24 bg-zinc-50 dark:bg-[#080808] border-y border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10">
+                            <div className="lg:col-span-2 lg:row-span-2 bg-white dark:bg-[#111] border border-zinc-200 dark:border-white/5 p-12 md:p-20 flex flex-col justify-between group relative overflow-hidden shadow-sm text-center lg:text-left">
+                                <div className="relative z-10 text-zinc-900 dark:text-zinc-100">
+                                    <div className="text-[11px] font-black tracking-[0.6em] text-indigo-600 mb-10 italic uppercase font-bold">LEGENDARY GROWTH METRIC</div>
+                                    <h4 className="text-8xl md:text-[11.5rem] font-black tracking-tighter group-hover:scale-105 transition-transform duration-1000 leading-none text-zinc-900 dark:text-zinc-100 uppercase">1.38M</h4>
+                                    <p className="text-2xl font-black uppercase text-zinc-400 tracking-tighter mt-8 italic">Monthly Page Views</p>
+                                </div>
+                                <Icon name="TrendingUp" className="absolute top-0 right-0 p-12 opacity-5 dark:opacity-10 text-indigo-600" size={450} />
+                            </div>
+                            <div className="md:col-span-2 bg-indigo-600 p-12 md:p-20 flex flex-col justify-center text-white shadow-2xl text-center"><div className="text-6xl md:text-[5.5rem] font-black tracking-tighter italic uppercase leading-none text-white">33,000+ Fans</div><p className="text-lg uppercase tracking-[0.4em] opacity-80 mt-10 font-bold italic border-t border-white/20 pt-8 uppercase text-white">10 Days Social Explosion @Tokyo Edit</p></div>
+                            <div className="bg-white dark:bg-[#111] border border-zinc-200 p-10 md:p-16 shadow-sm text-center transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-900"><div className="text-[10px] font-black uppercase opacity-40 mb-4 tracking-widest text-zinc-400 font-bold">BD IMPACT</div><div className="text-7xl font-black tracking-tighter leading-none italic uppercase text-indigo-600 transition-transform group-hover:scale-110 font-bold underline">300%</div><p className="text-[11px] font-black uppercase tracking-widest opacity-60 mt-6 font-bold text-indigo-600">Project Value Premium</p></div>
+                            <div className="bg-zinc-900 dark:bg-white text-white dark:text-black p-10 md:p-16 shadow-xl text-center"><div className="text-[10px] font-black uppercase opacity-40 mb-4 tracking-widest font-bold font-black italic uppercase">REVENUE SCALING</div><div className="text-4xl md:text-5xl font-black tracking-tighter leading-tight uppercase transition-transform group-hover:scale-110">400K+</div><p className="text-[11px] font-black opacity-60 uppercase tracking-widest mt-4 italic uppercase">Monthly Monetization</p></div>
+                        </div>
+                    </section>
+
+                    <section id="roots" className="py-32 md:py-64 px-6 md:px-24 bg-zinc-50 dark:bg-[#030303] text-left">
+                        <div className="max-w-6xl mx-auto">
+                            <div className="flex items-center space-x-8 mb-24 opacity-40 text-indigo-600 font-bold"><h2 className="text-[12px] font-black tracking-[1em] uppercase font-bold leading-none">EARLY ROOTS & WRITING</h2><div className="h-px flex-1 bg-zinc-300 dark:bg-zinc-800"></div></div>
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 md:gap-20 text-left">
+                                {roots.map((item, i) => (<div key={i} className="border-b border-zinc-200 dark:border-zinc-800 pb-10 group transition-all text-zinc-900 dark:text-zinc-100 text-left"><div className="text-2xl md:text-3xl font-serif italic group-hover:text-indigo-600 transition-colors uppercase leading-tight mb-4 text-left">{item.t}</div><div className="text-[14px] font-bold text-zinc-400 mt-2 uppercase tracking-[0.1em] opacity-80 leading-relaxed font-light text-left">{item.d}</div></div>))}
+                            </div>
+                        </div>
+                    </section>
+
+                    <section id="academic" className="py-32 md:py-64 px-6 md:px-24 text-zinc-900 dark:text-zinc-100 text-left">
+                        <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-24 md:gap-40 text-left">
+                            <div className="lg:col-span-1 border-l-4 border-indigo-600 pl-10 text-left"><h3 className="text-xs font-black tracking-[1.2em] text-zinc-400 mb-12 uppercase italic font-bold opacity-40">EDUCATION</h3><div className="space-y-16 text-left"><div className="group/edu text-left"><div className="text-[11px] font-black uppercase opacity-50 mb-4 tracking-widest text-indigo-600 font-bold italic uppercase">Technical Training</div><div className="text-3xl font-black uppercase tracking-tight mb-3 leading-none group-hover/edu:text-indigo-500 transition-colors font-bold tracking-tighter">ALPHA Camp</div><div className="text-base italic text-zinc-500 uppercase leading-relaxed font-light">JavaScript Full Stack Program (2022)</div></div><div className="group/edu text-left"><div className="text-[11px] font-black uppercase opacity-50 mb-4 tracking-widest text-indigo-600 font-bold italic uppercase">Literary Arts</div><div className="text-3xl font-black uppercase tracking-tight mb-3 leading-none group-hover/edu:text-indigo-500 transition-colors font-bold tracking-tighter uppercase">國立臺北教育大學</div><div className="text-base italic text-zinc-500 leading-relaxed uppercase font-light text-left">語文與創作學系文學創作組</div><div className="text-[13px] font-bold text-indigo-500 mt-12 uppercase tracking-widest italic leading-relaxed border-t border-zinc-200 dark:border-zinc-800 pt-8 shadow-sm text-zinc-900 dark:text-white"><span className="opacity-60 block mb-2 font-black uppercase tracking-widest text-[10px]">個人著作</span>攝影散文集《大娛樂家》<br/>ISBN 978-957-43-4386-7</div></div></div></div>
+                            <div className="lg:col-span-2 text-left text-zinc-900 dark:text-zinc-400"><h3 className="text-xs font-black tracking-[1.2em] text-zinc-400 mb-12 uppercase italic font-bold opacity-40 text-left">CORE COMPETENCIES</h3><div className="space-y-16 text-left"><div className="flex flex-wrap gap-5 text-left">{["AI Workflow", "GAS Architecture", "Growth Hacking", "SEO Expert", "Technical BD", "Content Strategy"].map(skill => (<span key={skill} className="px-7 py-4 bg-zinc-200/40 dark:bg-zinc-900/40 border border-zinc-200 dark:border-zinc-800 text-[11px] font-black uppercase tracking-widest text-zinc-600 dark:text-zinc-400 hover:border-indigo-600 hover:text-white hover:bg-indigo-600 transition-all font-bold rounded-sm cursor-default uppercase text-left">{skill}</span>))}</div><div className="pt-20 border-t border-zinc-200 dark:border-zinc-800 grid grid-cols-1 md:grid-cols-2 gap-10 text-zinc-900 dark:text-zinc-100 text-left"><div className="text-indigo-600 text-left"><div className="font-black italic tracking-tighter uppercase text-3xl md:text-5xl underline decoration-indigo-600/30 leading-none mb-4 whitespace-nowrap text-left">TOEIC 730 | IELTS 5.5</div><div className="text-[11px] font-bold text-zinc-400 uppercase tracking-[0.4em] italic opacity-60 font-mono leading-relaxed mt-10 text-left"> // CERTIFICATION: AUSTRALIAN ESPRESSO<br/> // CBD COLLEGE PTY LTD, 2019</div></div><div className="space-y-4 text-left"><div className="text-[10px] font-black uppercase tracking-widest text-indigo-500 font-bold text-left uppercase">Linguistic Mastery</div><div className="text-sm font-bold uppercase tracking-widest text-zinc-400 leading-relaxed font-serif italic text-left text-zinc-400">Mandarin (Native) / Taiwanese (Native) / English (Advanced) / Cantonese (Listening Advanced)</div></div></div></div></div>
+                        </div>
+                    </section>
+
+                    {/* Footer - The Ultimate CTA + Visitor Counter */}
+                    <footer id="contact" className="py-32 md:py-64 bg-zinc-100 dark:bg-black text-center relative overflow-hidden text-zinc-900 dark:text-zinc-100 uppercase">
+                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[25vw] font-black text-white dark:text-white/[0.015] italic uppercase pointer-events-none tracking-tighter select-none">DIAMOND</div>
+                        <div className="relative z-10 px-6">
+                            <h2 className="text-6xl md:text-9xl lg:text-[12rem] font-black tracking-tighter mb-24 italic leading-[0.75] select-none text-zinc-900 dark:text-white uppercase">Let's scale <br/><span className="text-indigo-600 uppercase">your story</span></h2>
+                            <div className="mt-20 md:mt-40"><a href="mailto:fengdiamond@gmail.com" className="text-2xl md:text-5xl lg:text-7xl font-black tracking-tighter hover:text-indigo-600 transition-all underline decoration-4 md:decoration-[16px] underline-offset-8 md:underline-offset-[24px] decoration-indigo-600/20 hover:decoration-indigo-600/100 uppercase leading-none block md:inline-block text-zinc-900 dark:text-white">fengdiamond@gmail.com</a></div>
+                            
+                            {/* 版權與數據欄 */}
+                            <div className="mt-48 md:mt-72 pt-20 border-t border-zinc-300 dark:border-zinc-900 text-[11px] text-zinc-400 font-black uppercase tracking-[0.5em] flex flex-col md:flex-row justify-between items-center px-4 md:px-24 gap-12 text-zinc-400">
+                                <span className="opacity-60 font-bold tracking-widest font-mono">DIAMOND FENG 馮興怡 © 2026 ALL RIGHTS RESERVED</span>
+                                
+                                {/* 訪客計數器 */}
+                                <div className="font-mono text-indigo-500 font-bold tracking-[0.3em] flex items-center space-x-3 bg-indigo-500/5 px-4 py-2 rounded-full border border-indigo-500/10">
+                                    <span className="opacity-60">TOTAL VIEWS:</span>
+                                    <span id="busuanzi_value_site_pv">...</span>
+                                </div>
+
+                                <span className="uppercase opacity-60 font-bold font-mono">TAIPEI, TAIWAN</span>
+                            </div>
+                        </div>
+                    </footer>
+
+                    {/* Mobile Menu Overlay */}
+                    {isMenuOpen && (
+                        <div className="fixed inset-0 z-[10002] bg-[#fcfcfc] dark:bg-[#030303] p-10 flex flex-col justify-center text-zinc-900 dark:text-white uppercase font-black italic shadow-2xl duration-500 text-center">
+                            <div className="absolute top-10 right-10" onClick={() => setIsMenuOpen(false)}><Icon name="X" size={40} /></div>
+                            <div className="space-y-12 text-5xl md:text-8xl tracking-tighter border-l-[12px] border-indigo-600 pl-10 text-zinc-900 dark:text-white text-left">
+                                <a href="#about" onClick={() => setIsMenuOpen(false)} className="block hover:text-indigo-600 transition-all hover:translate-x-8 uppercase">Summary</a>
+                                <a href="#core-career" onClick={() => setIsMenuOpen(false)} className="block hover:text-indigo-600 transition-all hover:translate-x-8 uppercase">Career</a>
+                                <a href="#brand" onClick={() => setIsMenuOpen(false)} className="block hover:text-indigo-600 transition-all hover:translate-x-8 uppercase">Brand</a>
+                                <a href="#ventures" onClick={() => setIsMenuOpen(false)} className="block hover:text-indigo-600 transition-all hover:translate-x-8 uppercase">Consulting</a>
+                                <a href="#academic" onClick={() => setIsMenuOpen(false)} className="block hover:text-indigo-600 transition-all hover:translate-x-8 uppercase font-bold">Education</a>
+                                <button onClick={() => {setIsCVModalOpen(true); setIsMenuOpen(false); setPasswordError(false);}} className="block hover:text-indigo-600 transition-all hover:translate-x-8 text-indigo-500 uppercase font-bold tracking-widest text-4xl text-left">Full CV</button>
+                                <a href="#contact" onClick={() => setIsMenuOpen(false)} className="block hover:text-indigo-600 transition-all hover:translate-x-8 text-indigo-600 underline uppercase font-bold tracking-widest">Connect</a>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
