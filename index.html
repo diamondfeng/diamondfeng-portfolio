@@ -26,8 +26,11 @@
     <script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@babel/standalone/babel.min.js"></script>
-    <!-- 訪客計數器服務 (Busuanzi) -->
-    <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore-compat.js"></script>
 
     <style>
         body { transition: background-color 1s ease, color 0.5s ease; font-size: 16px; line-height: 1.5; letter-spacing: 0.01em; overflow-x: hidden; }
@@ -80,7 +83,7 @@
         
         html { scroll-behavior: smooth; }
 
-        #busuanzi_value_site_pv:empty::before { content: "..."; animation: pulse 1.5s infinite; }
+        #view-count:empty::before { content: "..."; animation: pulse 1.5s infinite; }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
     </style>
 </head>
@@ -89,6 +92,13 @@
     <div id="root"></div>
 
     <script type="text/babel">
+        // 初始化 Firebase (使用相容模式以配合同步代碼風格)
+        const firebaseConfig = JSON.parse(__firebase_config);
+        const app = firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'diamond-portfolio';
+
         const { useState, useEffect, useRef } = React;
 
         const initMagicEffect = () => {
@@ -187,26 +197,72 @@
             const [scrollProgress, setScrollProgress] = useState(0);
             const [cursorPos, setCursorPos] = useState({ x: -100, y: -100 });
             const [imgError, setImgError] = useState(false);
+            const [totalViews, setTotalViews] = useState(null);
+            const [user, setUser] = useState(null);
 
             useEffect(() => {
                 if (isDark) document.documentElement.classList.add('dark');
                 else document.documentElement.classList.remove('dark');
             }, [isDark]);
 
+            // 初始化身份驗證 (遵守 Rule 3)
+            useEffect(() => {
+                const initAuth = async () => {
+                  try {
+                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                        await auth.signInWithCustomToken(__initial_auth_token);
+                    } else {
+                        await auth.signInAnonymously();
+                    }
+                  } catch (err) {
+                    console.error("Auth initialization failed:", err);
+                  }
+                };
+                initAuth();
+                const unsubscribe = auth.onAuthStateChanged(setUser);
+                return () => unsubscribe();
+            }, []);
+
+            // 數據處理：訪客計數 (遵守 Rule 1 & 2)
+            useEffect(() => {
+                if (!user) return;
+                
+                // 修正路徑段數：artifacts (1) / appId (2) / public (3) / data (4) / counters (5) / main (6)
+                const statsDoc = db.doc(`artifacts/${appId}/public/data/counters/main`);
+
+                const incrementViews = async () => {
+                    const sessionKey = `viewed_${appId}`;
+                    if (!sessionStorage.getItem(sessionKey)) {
+                        try {
+                            await statsDoc.set({ 
+                                views: firebase.firestore.FieldValue.increment(1) 
+                            }, { merge: true });
+                            sessionStorage.setItem(sessionKey, 'true');
+                        } catch (err) {
+                            console.error("Failed to increment views:", err);
+                        }
+                    }
+                };
+
+                incrementViews();
+
+                // 實時監聽計數
+                const unsubscribe = statsDoc.onSnapshot((doc) => {
+                    if (doc.exists) {
+                        setTotalViews(doc.data().views || 0);
+                    } else {
+                        setTotalViews(0);
+                    }
+                }, (error) => {
+                    console.error("Firestore onSnapshot error:", error);
+                });
+
+                return () => unsubscribe();
+            }, [user]);
+
             useEffect(() => {
                 if (!isLoading) {
                     initMagicEffect();
-                    // 修復不蒜子在 React 渲染後的錯誤與顯示問題
-                    const bszTimer = setTimeout(() => {
-                        try {
-                            if (typeof window.bszCaller !== 'undefined' && document.getElementById('busuanzi_value_site_pv')) {
-                                window.bszCaller.fetch();
-                            }
-                        } catch (e) {
-                            // 捕捉第三方腳本內部錯誤以防止頁面崩潰
-                        }
-                    }, 500);
-                    return () => clearTimeout(bszTimer);
                 }
                 const handleScroll = () => setScrollProgress(window.scrollY / (document.documentElement.scrollHeight - window.innerHeight));
                 const moveCursor = (e) => setCursorPos({ x: e.clientX, y: e.clientY });
@@ -231,7 +287,7 @@
             ];
 
             const ventures = [
-                { c: "nuva", sub: "AI 教育網紅品牌", url: "https://www.meetnuva.com/", r: "商務開發總監 Business Development Director", p: "2025.09 – 2026.01", d: ["亞太跨國 0 到 1 陌生開發：一個月內達成泰國實體 AI 講座（40人）、香港最大線上 AI 教育公司聯名講座（80人）及 XChange 團隊合作佈局", "向誠品吉隆坡 (Eslite KL) 行銷團隊提案 AI 教育月書籍策展 規劃每週誠品講堂 並獲得天下換日線合作意向", "顧問式銷售溢價：將傳產客戶單日工作坊需求 顧問轉化為 3.5 日深度 AI 課程加發表活動 合約案源價值從 10 萬提升至 30 萬以上 (300% 溢價達成)", "戰略對接天下換日線爭取專屬專欄及網站專訪 牽線關鍵評論網《商業內幕》促使總編引薦基隆市長關注品牌相關訪問議題", "一週內成功談成 Red Bull 野營用品與花藝贊助 廠商追加 10 箱贊助量 引薦創辦人擔任 2026 Red Bull Basement 全球競賽台灣區評審"] },
+                { c: "nuva", sub: "AI 教育網紅品牌", url: "https://www.meetnuva.com/", r: "商務開發總監 Business Development Director", p: "2025.09 – 2026.01", d: ["亞太跨國 0 到 1 陌生開發：一個月內達成泰國實體 AI 講座（40人）、香港最大線上 AI 教育公司聯名講座（80人）及 XChange 團隊合作佈局", "向誠品吉隆坡 (Eslite KL) 行銷團隊提案 AI 教育月書籍策展 規劃每週誠品講堂 並獲得天下換日線合作意向", "顧問式銷售溢價：將傳產客戶單日工作坊需求 顧問轉化為 3.5 日深度 AI 課程加發表活動 合約案源價值從 10 萬提升至 30 萬以上 (300% 溢價達成)", "戰略對接天下換日線專屬專欄及網站專訪 牽線關鍵評論網《商業內幕》促使總編引薦基隆市長關注品牌相關訪問議題", "一週內成功談成 Red Bull 野營用品與花藝贊助 廠商追加 10 箱贊助量 引薦創辦人擔任 2026 Red Bull Basement 全球競賽台灣區評審"] },
                 { c: "couchspace", sub: "沙發心理", url: "https://www.thecouchspace.com/", r: "業務經理 Business Manager", p: "2025.09 – 2026.01", d: ["B2B 年度福利方案規劃：與 H2U 永悅健康共同策劃 緯穎科技 佳能台灣 (Canon) 2026 年度員工福利專案 負責價值鏈設計", "獨立規劃台達電年度方案 並針對 HR 族群主導執行專屬 HRV 檢測活動 建立品牌與企業之深層連結", "牽線並談成 天下學習 x couchspace 及 Hahow x couchspace 年度深度合作方案 (包含國際書展專屬方案與訂閱影音課程) 拓展變現渠道", "系統化整頓公司四年累積之名單 並透過陌生開發建立全新 professional 資源庫 活化公司資產"] }
             ];
 
@@ -300,20 +356,20 @@
                     )}
 
                     {/* Hero Section */}
-                    <section className="min-h-screen flex flex-col justify-center px-6 md:px-24 relative pt-32 pb-24 overflow-hidden text-center lg:text-left">
+                    <section className="min-h-screen flex items-center justify-center px-6 md:px-12 lg:px-24 relative pt-32 pb-24 overflow-hidden text-center lg:text-left">
                         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[900px] bg-indigo-600/5 blur-[160px] rounded-full"></div>
-                        <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-center reveal max-w-7xl mx-auto">
-                            <div className="lg:col-span-7 xl:col-span-8">
-                                <div className="flex items-center justify-center lg:justify-start space-x-3 mb-10 text-indigo-600"><Icon name="Sparkles" size={22} /><span className="text-[11px] font-black tracking-[0.6em] uppercase font-bold">AI CONTENT ARCHITECT & STRATEGIST</span></div>
-                                <h1 className="text-[12vw] sm:text-[10vw] lg:text-[8vw] font-black leading-[0.85] tracking-tighter mb-10 text-zinc-900 dark:text-zinc-100 uppercase select-none">馮興怡 <br /><span className="italic serif text-transparent bg-clip-text bg-gradient-to-r from-zinc-900 to-zinc-500 dark:from-white dark:to-zinc-600 tracking-tighter uppercase">Diamond Feng</span></h1>
-                                <p className="text-xl sm:text-2xl md:text-4xl lg:text-5xl text-zinc-700 dark:text-zinc-400 font-light max-w-3xl mb-12 leading-tight uppercase text-zinc-900 dark:text-zinc-400">內容營運與增長專家 <br/><span className="text-indigo-600 font-bold italic serif">AI-Driven Content Ops & Growth</span></p>
+                        <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 xl:gap-24 items-center reveal max-w-7xl mx-auto w-full">
+                            <div className="lg:col-span-7 xl:col-span-8 order-2 lg:order-1">
+                                <div className="flex items-center justify-center lg:justify-start space-x-3 mb-8 md:mb-10 text-indigo-600"><Icon name="Sparkles" size={22} /><span className="text-[11px] font-black tracking-[0.6em] uppercase font-bold">AI CONTENT ARCHITECT & STRATEGIST</span></div>
+                                <h1 className="text-[12vw] sm:text-[10vw] lg:text-[7.5vw] font-black leading-[0.85] tracking-tighter mb-10 text-zinc-900 dark:text-zinc-100 uppercase select-none">馮興怡 <br /><span className="italic serif text-transparent bg-clip-text bg-gradient-to-r from-zinc-900 to-zinc-500 dark:from-white dark:to-zinc-600 tracking-tighter uppercase">Diamond Feng</span></h1>
+                                <p className="text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl text-zinc-700 dark:text-zinc-400 font-light max-w-3xl mb-12 leading-tight uppercase">內容營運與增長專家 <br/><span className="text-indigo-600 font-bold italic serif">AI-Driven Content Ops & Growth</span></p>
                                 <div className="flex flex-wrap justify-center lg:justify-start gap-5">
-                                    <a href="#contact" className="w-full sm:w-auto text-center bg-indigo-600 hover:bg-indigo-700 text-white px-12 py-5 text-sm font-black tracking-widest uppercase transition-all shadow-2xl rounded-sm hover:-translate-y-1 text-white font-bold">Connect With Me</a>
-                                    <a href="#brand" className="w-full sm:w-auto text-center border-2 border-zinc-300 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-900 px-12 py-5 text-sm font-black tracking-widest uppercase transition-all rounded-sm font-bold">View Projects</a>
+                                    <a href="#contact" className="w-full sm:w-auto text-center bg-indigo-600 hover:bg-indigo-700 text-white px-10 py-5 text-sm font-black tracking-widest uppercase transition-all shadow-2xl rounded-sm hover:-translate-y-1 font-bold">Connect With Me</a>
+                                    <a href="#brand" className="w-full sm:w-auto text-center border-2 border-zinc-300 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-900 px-10 py-5 text-sm font-black tracking-widest uppercase transition-all rounded-sm font-bold">View Projects</a>
                                 </div>
                             </div>
-                            <div className="lg:col-span-5 xl:col-span-4 flex justify-center lg:justify-end">
-                                <div className="photo-container photo-float relative w-64 h-80 sm:w-80 sm:h-[480px] lg:w-[380px] lg:h-[520px] border-[12px] md:border-[16px] border-white dark:border-zinc-900 shadow-2xl bg-zinc-200 dark:bg-zinc-800">
+                            <div className="lg:col-span-5 xl:col-span-4 flex justify-center lg:justify-end order-1 lg:order-2">
+                                <div className="photo-container photo-float relative w-56 h-72 sm:w-72 sm:h-96 md:w-80 md:h-[450px] lg:w-full lg:h-auto lg:aspect-[3/4] max-w-[400px] border-[10px] md:border-[16px] border-white dark:border-zinc-900 shadow-2xl bg-zinc-200 dark:bg-zinc-800 shrink-0">
                                     {!imgError ? (<img src="個人照_Diamond_1.jpg" alt="Diamond Feng" className="photo-img w-full h-full object-cover" onError={() => setImgError(true)} />) : (<div className="w-full h-full flex items-center justify-center italic text-white font-serif text-3xl bg-indigo-950 uppercase tracking-tighter">Diamond Feng</div>)}
                                 </div>
                             </div>
@@ -348,7 +404,7 @@
                                                     <span className="text-3xl md:text-5xl opacity-40 mt-2 block lowercase font-serif italic">{brandData.sub} <Icon name="ExternalLink" size={24} className="inline ml-3 opacity-30 group-hover/link:opacity-100 transition-all" /></span>
                                                 </a>
                                             </h4>
-                                            <p className="text-xl font-bold italic text-zinc-500 mb-10 uppercase tracking-widest leading-none">個人自媒體品牌 | 2025.04 – 至今</p>
+                                            <p className="text-xl font-bold italic text-zinc-500 mb-10 uppercase tracking-widest leading-none">個人自媒體 brand | 2025.04 – 至今</p>
                                         </div>
                                         <div className="text-3xl font-mono text-indigo-500 font-bold tracking-tighter bg-indigo-500/10 px-6 py-3 rounded-full whitespace-nowrap">33K+ FANS</div>
                                     </div>
@@ -456,9 +512,7 @@
                                 {/* 訪客計數器 */}
                                 <div className="font-mono text-indigo-500 font-bold tracking-[0.3em] flex items-center space-x-3 bg-indigo-500/5 px-4 py-2 rounded-full border border-indigo-500/10">
                                     <span className="opacity-60">TOTAL VIEWS:</span>
-                                    <span id="busuanzi_container_site_pv" style={{ display: 'inline' }}>
-                                        <span id="busuanzi_value_site_pv"></span>
-                                    </span>
+                                    <span id="view-count">{totalViews !== null ? totalViews.toLocaleString() : ""}</span>
                                 </div>
 
                                 <span className="uppercase opacity-60 font-bold font-mono">TAIPEI, TAIWAN</span>
