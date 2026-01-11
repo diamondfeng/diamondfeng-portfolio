@@ -22,12 +22,16 @@
     </script>
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;700;900&family=Playfair+Display:ital,wght@0,400;0,700;1,400;1,700&family=Noto+Sans+TC:wght@300;400;500;700;900&family=Noto+Serif+TC:wght@400;700&family=JetBrains+Mono&display=swap" rel="stylesheet">
+    
     <!-- React & Babel -->
     <script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@babel/standalone/babel.min.js"></script>
-    <!-- 訪客計數器服務 (Busuanzi) -->
-    <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    
+    <!-- Firebase SDK - 使用穩定版本 -->
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore-compat.js"></script>
 
     <style>
         body { transition: background-color 1s ease, color 0.5s ease; font-size: 16px; line-height: 1.5; letter-spacing: 0.01em; overflow-x: hidden; }
@@ -80,7 +84,7 @@
         
         html { scroll-behavior: smooth; }
 
-        #busuanzi_value_site_pv:empty::before { content: "..."; animation: pulse 1.5s infinite; }
+        #view-count-number:empty::before { content: "..."; animation: pulse 1.5s infinite; }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
     </style>
 </head>
@@ -89,6 +93,18 @@
     <div id="root"></div>
 
     <script type="text/babel">
+        // 安全初始化 Firebase
+        let auth, db, appId;
+        try {
+            const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+            const app = firebase.initializeApp(firebaseConfig);
+            auth = firebase.auth();
+            db = firebase.firestore();
+            appId = typeof __app_id !== 'undefined' ? __app_id : 'diamond-portfolio';
+        } catch (e) {
+            console.warn("Firebase initialization failed, counting might be disabled.", e);
+        }
+
         const { useState, useEffect, useRef } = React;
 
         const initMagicEffect = () => {
@@ -187,26 +203,66 @@
             const [scrollProgress, setScrollProgress] = useState(0);
             const [cursorPos, setCursorPos] = useState({ x: -100, y: -100 });
             const [imgError, setImgError] = useState(false);
+            const [totalViews, setTotalViews] = useState(null);
+            const [user, setUser] = useState(null);
 
             useEffect(() => {
                 if (isDark) document.documentElement.classList.add('dark');
                 else document.documentElement.classList.remove('dark');
             }, [isDark]);
 
+            // 初始化身份驗證
+            useEffect(() => {
+                if (!auth) return;
+                const initAuth = async () => {
+                  try {
+                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                        await auth.signInWithCustomToken(__initial_auth_token);
+                    } else {
+                        await auth.signInAnonymously();
+                    }
+                  } catch (err) {}
+                };
+                initAuth();
+                const unsubscribe = auth.onAuthStateChanged(setUser);
+                return () => unsubscribe();
+            }, []);
+
+            // 數據處理：訪客計數 (修正路徑段數為 6 段以符合 Firebase 規範)
+            useEffect(() => {
+                if (!user || !db) return;
+                
+                // 段數：artifacts (1) / appId (2) / public (3) / data (4) / global_stats (5) / visitor_counter (6)
+                const statsDoc = db.doc(`artifacts/${appId}/public/data/global_stats/visitor_counter`);
+
+                const incrementViews = async () => {
+                    const sessionKey = `v_done_${appId}`;
+                    if (!sessionStorage.getItem(sessionKey)) {
+                        try {
+                            await statsDoc.set({ 
+                                views: firebase.firestore.FieldValue.increment(1) 
+                            }, { merge: true });
+                            sessionStorage.setItem(sessionKey, 'true');
+                        } catch (err) {}
+                    }
+                };
+
+                incrementViews();
+
+                const unsubscribe = statsDoc.onSnapshot((doc) => {
+                    if (doc.exists) {
+                        setTotalViews(doc.data().views || 0);
+                    } else {
+                        setTotalViews(0);
+                    }
+                }, (error) => {});
+
+                return () => unsubscribe();
+            }, [user]);
+
             useEffect(() => {
                 if (!isLoading) {
                     initMagicEffect();
-                    // 修復不蒜子在 React 渲染後的錯誤與顯示問題
-                    const bszTimer = setTimeout(() => {
-                        try {
-                            if (typeof window.bszCaller !== 'undefined' && document.getElementById('busuanzi_value_site_pv')) {
-                                window.bszCaller.fetch();
-                            }
-                        } catch (e) {
-                            // 捕捉第三方腳本內部錯誤以防止頁面崩潰
-                        }
-                    }, 500);
-                    return () => clearTimeout(bszTimer);
                 }
                 const handleScroll = () => setScrollProgress(window.scrollY / (document.documentElement.scrollHeight - window.innerHeight));
                 const moveCursor = (e) => setCursorPos({ x: e.clientX, y: e.clientY });
@@ -299,21 +355,21 @@
                         </div>
                     )}
 
-                    {/* Hero Section */}
-                    <section className="min-h-screen flex flex-col justify-center px-6 md:px-24 relative pt-32 pb-24 overflow-hidden text-center lg:text-left">
+                    {/* Hero Section - 深度修復跑版 */}
+                    <section className="min-h-screen flex items-center justify-center px-6 md:px-12 lg:px-24 relative pt-32 pb-24 overflow-hidden text-center lg:text-left">
                         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[900px] bg-indigo-600/5 blur-[160px] rounded-full"></div>
-                        <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-center reveal max-w-7xl mx-auto">
-                            <div className="lg:col-span-7 xl:col-span-8">
-                                <div className="flex items-center justify-center lg:justify-start space-x-3 mb-10 text-indigo-600"><Icon name="Sparkles" size={22} /><span className="text-[11px] font-black tracking-[0.6em] uppercase font-bold">AI CONTENT ARCHITECT & STRATEGIST</span></div>
-                                <h1 className="text-[12vw] sm:text-[10vw] lg:text-[8vw] font-black leading-[0.85] tracking-tighter mb-10 text-zinc-900 dark:text-zinc-100 uppercase select-none">馮興怡 <br /><span className="italic serif text-transparent bg-clip-text bg-gradient-to-r from-zinc-900 to-zinc-500 dark:from-white dark:to-zinc-600 tracking-tighter uppercase">Diamond Feng</span></h1>
-                                <p className="text-xl sm:text-2xl md:text-4xl lg:text-5xl text-zinc-700 dark:text-zinc-400 font-light max-w-3xl mb-12 leading-tight uppercase text-zinc-900 dark:text-zinc-400">內容營運與增長專家 <br/><span className="text-indigo-600 font-bold italic serif">AI-Driven Content Ops & Growth</span></p>
+                        <div className="relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-24 items-center reveal max-w-7xl mx-auto w-full">
+                            <div className="order-2 lg:order-1">
+                                <div className="flex items-center justify-center lg:justify-start space-x-3 mb-8 text-indigo-600"><Icon name="Sparkles" size={22} /><span className="text-[11px] font-black tracking-[0.6em] uppercase font-bold">AI CONTENT ARCHITECT & STRATEGIST</span></div>
+                                <h1 className="text-[11vw] sm:text-[9vw] lg:text-[6.5vw] font-black leading-[0.85] tracking-tighter mb-10 text-zinc-900 dark:text-zinc-100 uppercase select-none">馮興怡 <br /><span className="italic serif text-transparent bg-clip-text bg-gradient-to-r from-zinc-900 to-zinc-500 dark:from-white dark:to-zinc-600 tracking-tighter uppercase">Diamond Feng</span></h1>
+                                <p className="text-xl sm:text-2xl md:text-3xl lg:text-4xl text-zinc-700 dark:text-zinc-400 font-light max-w-3xl mb-12 leading-tight uppercase">內容營運與增長專家 <br/><span className="text-indigo-600 font-bold italic serif">AI-Driven Content Ops & Growth</span></p>
                                 <div className="flex flex-wrap justify-center lg:justify-start gap-5">
-                                    <a href="#contact" className="w-full sm:w-auto text-center bg-indigo-600 hover:bg-indigo-700 text-white px-12 py-5 text-sm font-black tracking-widest uppercase transition-all shadow-2xl rounded-sm hover:-translate-y-1 text-white font-bold">Connect With Me</a>
-                                    <a href="#brand" className="w-full sm:w-auto text-center border-2 border-zinc-300 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-900 px-12 py-5 text-sm font-black tracking-widest uppercase transition-all rounded-sm font-bold">View Projects</a>
+                                    <a href="#contact" className="w-full sm:w-auto text-center bg-indigo-600 hover:bg-indigo-700 text-white px-10 py-5 text-sm font-black tracking-widest uppercase transition-all shadow-2xl rounded-sm hover:-translate-y-1 font-bold">Connect With Me</a>
+                                    <a href="#brand" className="w-full sm:w-auto text-center border-2 border-zinc-300 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-900 px-10 py-5 text-sm font-black tracking-widest uppercase transition-all rounded-sm font-bold">View Projects</a>
                                 </div>
                             </div>
-                            <div className="lg:col-span-5 xl:col-span-4 flex justify-center lg:justify-end">
-                                <div className="photo-container photo-float relative w-64 h-80 sm:w-80 sm:h-[480px] lg:w-[380px] lg:h-[520px] border-[12px] md:border-[16px] border-white dark:border-zinc-900 shadow-2xl bg-zinc-200 dark:bg-zinc-800">
+                            <div className="flex justify-center lg:justify-end order-1 lg:order-2">
+                                <div className="photo-container photo-float relative w-56 h-72 sm:w-72 sm:h-96 md:w-80 md:h-[450px] lg:w-full lg:max-w-[420px] aspect-[3/4] border-[10px] md:border-[16px] border-white dark:border-zinc-900 shadow-2xl bg-zinc-200 dark:bg-zinc-800 shrink-0">
                                     {!imgError ? (<img src="個人照_Diamond_1.jpg" alt="Diamond Feng" className="photo-img w-full h-full object-cover" onError={() => setImgError(true)} />) : (<div className="w-full h-full flex items-center justify-center italic text-white font-serif text-3xl bg-indigo-950 uppercase tracking-tighter">Diamond Feng</div>)}
                                 </div>
                             </div>
@@ -426,6 +482,7 @@
                         </div>
                     </section>
 
+                    {/* Early Roots Section */}
                     <section id="roots" className="py-32 md:py-64 px-6 md:px-24 bg-zinc-50 dark:bg-[#030303] text-left">
                         <div className="max-w-6xl mx-auto">
                             <div className="flex items-center space-x-8 mb-24 opacity-40 text-indigo-600 font-bold"><h2 className="text-[12px] font-black tracking-[1em] uppercase font-bold leading-none">EARLY ROOTS & WRITING</h2><div className="h-px flex-1 bg-zinc-300 dark:bg-zinc-800"></div></div>
@@ -435,30 +492,27 @@
                         </div>
                     </section>
 
+                    {/* Education Section */}
                     <section id="academic" className="py-32 md:py-64 px-6 md:px-24 text-zinc-900 dark:text-zinc-100 text-left">
                         <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-24 md:gap-40 text-left">
                             <div className="lg:col-span-1 border-l-4 border-indigo-600 pl-10 text-left"><h3 className="text-xs font-black tracking-[1.2em] text-zinc-400 mb-12 uppercase italic font-bold opacity-40">EDUCATION</h3><div className="space-y-16 text-left"><div className="group/edu text-left"><div className="text-[11px] font-black uppercase opacity-50 mb-4 tracking-widest text-indigo-600 font-bold italic uppercase">Technical Training</div><div className="text-3xl font-black uppercase tracking-tight mb-3 leading-none group-hover/edu:text-indigo-500 transition-colors font-bold tracking-tighter">ALPHA Camp</div><div className="text-base italic text-zinc-500 uppercase leading-relaxed font-light">JavaScript Full Stack Program (2022)</div></div><div className="group/edu text-left"><div className="text-[11px] font-black uppercase opacity-50 mb-4 tracking-widest text-indigo-600 font-bold italic uppercase">Literary Arts</div><div className="text-3xl font-black uppercase tracking-tight mb-3 leading-none group-hover/edu:text-indigo-500 transition-colors font-bold tracking-tighter uppercase">國立臺北教育大學</div><div className="text-base italic text-zinc-500 leading-relaxed uppercase font-light text-left">語文與創作學系文學創作組</div><div className="text-[13px] font-bold text-indigo-500 mt-12 uppercase tracking-widest italic leading-relaxed border-t border-zinc-200 dark:border-zinc-800 pt-8 shadow-sm text-zinc-900 dark:text-white"><span className="opacity-60 block mb-2 font-black uppercase tracking-widest text-[10px]">個人著作</span>攝影散文集《大娛樂家》<br/>ISBN 978-957-43-4386-7</div></div></div></div>
-                            <div className="lg:col-span-2 text-left text-zinc-900 dark:text-zinc-400"><h3 className="text-xs font-black tracking-[1.2em] text-zinc-400 mb-12 uppercase italic font-bold opacity-40 text-left">CORE COMPETENCIES</h3><div className="space-y-16 text-left"><div className="flex flex-wrap gap-5 text-left">{["AI Workflow", "GAS Architecture", "Growth Hacking", "SEO Expert", "Technical BD", "Content Strategy"].map(skill => (<span key={skill} className="px-7 py-4 bg-zinc-200/40 dark:bg-zinc-900/40 border border-zinc-200 dark:border-zinc-800 text-[11px] font-black uppercase tracking-widest text-zinc-600 dark:text-zinc-400 hover:border-indigo-600 hover:text-white hover:bg-indigo-600 transition-all font-bold rounded-sm cursor-default uppercase text-left">{skill}</span>))}</div><div className="pt-20 border-t border-zinc-200 dark:border-zinc-800 grid grid-cols-1 md:grid-cols-2 gap-10 text-zinc-900 dark:text-zinc-100 text-left"><div className="text-indigo-600 text-left"><div className="font-black italic tracking-tighter uppercase text-3xl md:text-5xl underline decoration-indigo-600/30 leading-none mb-4 whitespace-nowrap text-left">TOEIC 730 | IELTS 5.5</div><div className="text-[11px] font-bold text-zinc-400 uppercase tracking-[0.4em] italic opacity-60 font-mono leading-relaxed mt-10 text-left"> // CERTIFICATION: AUSTRALIAN ESPRESSO<br/> // CBD COLLEGE PTY LTD, 2019</div></div><div className="space-y-4 text-left"><div className="text-[10px] font-black uppercase tracking-widest text-indigo-500 font-bold text-left uppercase">Linguistic Mastery</div><div className="text-sm font-bold uppercase tracking-widest text-zinc-400 leading-relaxed font-serif italic text-left text-zinc-400">Mandarin (Native) / Taiwanese (Native) / English (Advanced) / Cantonese (Listening Advanced)</div></div></div></div></div>
+                            <div className="lg:col-span-2 text-left text-zinc-900 dark:text-zinc-400"><h3 className="text-xs font-black tracking-[1.2em] text-zinc-400 mb-12 uppercase italic font-bold opacity-40 text-left">CORE COMPETENCIES</h3><div className="space-y-16 text-left"><div className="flex flex-wrap gap-5 text-left">{["AI Workflow", "GAS Architecture", "Growth Hacking", "SEO Expert", "Technical BD", "Content Strategy"].map(skill => (<span key={skill} className="px-7 py-4 bg-zinc-200/40 dark:bg-zinc-900/40 border border-zinc-200 dark:border-zinc-800 text-[11px] font-black uppercase tracking-widest text-zinc-600 dark:text-zinc-400 hover:border-indigo-600 hover:text-white hover:bg-indigo-600 transition-all font-bold rounded-sm cursor-default uppercase text-left">{skill}</span>))}</div><div className="pt-20 border-t border-zinc-200 dark:border-zinc-800 grid grid-cols-1 md:grid-cols-2 gap-10 text-zinc-900 dark:text-zinc-100 text-left"><div className="text-indigo-600 text-left"><div className="font-black italic tracking-tighter uppercase text-3xl md:text-5xl underline decoration-indigo-600/30 leading-none mb-4 whitespace-nowrap text-left">TOEIC 730 | IELTS 5.5</div><div className="text-[11px] font-bold text-zinc-400 uppercase tracking-[0.4em] italic opacity-60 font-mono leading-relaxed mt-10 text-left"> // CERTIFICATION: AUSTRALIAN ESPRESSO<br/> // CBD COLLEGE PTY LTD, 2019</div></div><div className="space-y-4 text-left"><div className="text-[10px] font-black uppercase tracking-widest text-indigo-500 font-bold text-left uppercase">Linguistic Mastery</div><div className="text-sm font-bold uppercase tracking-widest text-zinc-400 leading-relaxed font-serif italic text-left">Mandarin (Native) / Taiwanese (Native) / English (Advanced) / Cantonese (Listening Advanced)</div></div></div></div></div>
                         </div>
                     </section>
 
-                    {/* Footer - The Ultimate CTA + Visitor Counter */}
+                    {/* Footer - 修正訪客計數顯示 */}
                     <footer id="contact" className="py-32 md:py-64 bg-zinc-100 dark:bg-black text-center relative overflow-hidden text-zinc-900 dark:text-zinc-100 uppercase">
                         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[25vw] font-black text-white dark:text-white/[0.015] italic uppercase pointer-events-none tracking-tighter select-none">DIAMOND</div>
                         <div className="relative z-10 px-6">
                             <h2 className="text-6xl md:text-9xl lg:text-[10rem] font-black tracking-tighter mb-24 italic leading-[0.75] select-none text-zinc-900 dark:text-white uppercase">Let's scale <br/><span className="text-indigo-600 uppercase">your story</span></h2>
-                            <div className="mt-20 md:mt-40"><a href="mailto:fengdiamond@gmail.com" className="text-2xl md:text-5xl lg:text-7xl font-black tracking-tighter hover:text-indigo-600 transition-all underline decoration-4 md:decoration-[16px] underline-offset-8 md:underline-offset-[24px] decoration-indigo-600/20 hover:decoration-indigo-600/100 uppercase leading-none block md:inline-block text-zinc-900 dark:text-white">fengdiamond@gmail.com</a></div>
+                            <div className="mt-20 md:mt-40"><a href="mailto:fengdiamond@gmail.com" className="text-2xl md:text-5xl lg:text-7xl font-black tracking-tighter hover:text-indigo-600 transition-all underline decoration-4 md:decoration-[16px] underline-offset-8 md:underline-offset-[24px] decoration-indigo-600/20 hover:decoration-indigo-600/100 uppercase leading-none block md:inline-block text-zinc-900 dark:text-white font-bold">fengdiamond@gmail.com</a></div>
                             
-                            {/* 版權與數據欄 */}
-                            <div className="mt-48 md:mt-72 pt-20 border-t border-zinc-300 dark:border-zinc-900 text-[11px] text-zinc-400 font-black uppercase tracking-[0.5em] flex flex-col md:flex-row justify-between items-center px-4 md:px-24 gap-12 text-zinc-400">
+                            <div className="mt-48 md:mt-72 pt-20 border-t border-zinc-300 dark:border-zinc-900 text-[11px] text-zinc-400 font-black uppercase tracking-[0.5em] flex flex-col md:flex-row justify-between items-center px-4 md:px-24 gap-12">
                                 <span className="opacity-60 font-bold tracking-widest font-mono">DIAMOND FENG 馮興怡 © 2026 ALL RIGHTS RESERVED</span>
                                 
-                                {/* 訪客計數器 */}
                                 <div className="font-mono text-indigo-500 font-bold tracking-[0.3em] flex items-center space-x-3 bg-indigo-500/5 px-4 py-2 rounded-full border border-indigo-500/10">
                                     <span className="opacity-60">TOTAL VIEWS:</span>
-                                    <span id="busuanzi_container_site_pv" style={{ display: 'inline' }}>
-                                        <span id="busuanzi_value_site_pv"></span>
-                                    </span>
+                                    <span id="view-count-number">{totalViews !== null ? totalViews.toLocaleString() : ""}</span>
                                 </div>
 
                                 <span className="uppercase opacity-60 font-bold font-mono">TAIPEI, TAIWAN</span>
