@@ -1,112 +1,84 @@
 <!DOCTYPE html>
-<html lang="zh-TW">
+<html lang="zh-TW" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Diamond Feng | Content Architect</title>
+    <title>Diamond Feng 馮興怡 | AI 內容營運與增長專家</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'Noto Sans TC', 'sans-serif'],
+                        serif: ['Playfair Display', 'Noto Serif TC', 'serif'],
+                    }
+                }
+            }
+        }
+    </script>
     <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;700;900&family=Playfair+Display:ital,wght@1,900&display=swap" rel="stylesheet">
-    <!-- React & Babel (使用更穩定的 jsdelivr) -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;700;900&family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700;1,900&family=Noto+Sans+TC:wght@300;400;700;900&display=swap" rel="stylesheet">
+    <!-- React & Babel -->
     <script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@babel/standalone/babel.min.js"></script>
 
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #050505; color: #e5e5e5; margin: 0; overflow-x: hidden; }
+        body { transition: background-color 0.5s ease, color 0.5s ease; font-size: 16px; }
         .serif { font-family: 'Playfair Display', serif; }
         .noise {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: url('https://grainy-gradients.vercel.app/noise.svg');
             opacity: 0.03; pointer-events: none; z-index: 9999;
         }
+        .dark .noise { opacity: 0.05; }
+        
         .cursor-circle {
             position: fixed; width: 32px; height: 32px; border: 1px solid #4f46e5;
             border-radius: 50%; pointer-events: none; z-index: 10000;
             transition: transform 0.1s; transform: scale(1.5);
         }
-        @keyframes spin-slow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-        .animate-spin-slow { animation: spin-slow 20s linear infinite; }
-        .animate-spin-reverse { animation: spin-slow 15s linear infinite reverse; }
+        .light .cursor-circle { border-color: #4f46e5; }
         
-        ::-webkit-scrollbar { width: 0px; background: transparent; }
-        
+        ::-webkit-scrollbar { width: 4px; background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #4f46e5; border-radius: 10px; }
+
         .fade-in { animation: fadeIn 1s ease-out forwards; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
 
-        .photo-float {
-            animation: floating 6s ease-in-out infinite;
-            filter: grayscale(20%) contrast(110%);
-            transition: all 0.5s ease;
+        .photo-float { animation: floating 6s ease-in-out infinite; }
+        @keyframes floating { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-15px); } }
+
+        .section-title { font-size: 2.5rem; line-height: 1.2; font-weight: 900; letter-spacing: -0.02em; }
+        .body-text { font-size: 1.125rem; line-height: 1.8; }
+        
+        @media (max-width: 768px) {
+            .section-title { font-size: 2rem; }
+            .body-text { font-size: 1rem; }
         }
-        @keyframes floating {
-            0% { transform: translateY(0px); }
-            50% { transform: translateY(-15px); }
-            100% { transform: translateY(0px); }
-        }
-        .uppercase-all { text-transform: uppercase; }
     </style>
 </head>
-<body>
-    <div id="root">
-        <div style="height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #050505; color: #4f46e5; font-family: sans-serif;">
-            <div style="font-weight: 900; letter-spacing: 0.5em; font-size: 12px;">INITIALIZING DIAMOND'S BRAIN...</div>
-            <div style="margin-top: 20px; width: 200px; height: 1px; background: #222; position: relative;">
-                <div style="position: absolute; height: 100%; background: #4f46e5; width: 50%; animation: loading 2s infinite ease-in-out;"></div>
-            </div>
-        </div>
-    </div>
-
-    <style>
-        @keyframes loading {
-            0% { left: -50%; width: 30%; }
-            50% { left: 100%; width: 50%; }
-            100% { left: -50%; width: 30%; }
-        }
-    </style>
+<body class="bg-[#fafafa] text-zinc-900 dark:bg-[#050505] dark:text-zinc-100">
+    <div id="root"></div>
 
     <script type="text/babel">
         const { useState, useEffect, useRef } = React;
 
-        // --- 修復後的內嵌 SVG 圖示組件 (使用 Fragment 包裹多個標籤) ---
         const Icon = ({ name, size = 20, className = "" }) => {
             const icons = {
                 Sparkles: <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>,
-                TrendingUp: (
-                    <React.Fragment>
-                        <path d="m22 7-8.5 8.5-5-5L2 17"/>
-                        <path d="M16 7h6v6"/>
-                    </React.Fragment>
-                ),
+                TrendingUp: <React.Fragment><path d="m22 7-8.5 8.5-5-5L2 17"/><path d="M16 7h6v6"/></React.Fragment>,
                 MessageSquare: <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>,
-                X: (
-                    <React.Fragment>
-                        <path d="M18 6 6 18"/>
-                        <path d="m6 6 12 12"/>
-                    </React.Fragment>
-                ),
-                Menu: (
-                    <React.Fragment>
-                        <line x1="4" x2="20" y1="12" y2="12"/>
-                        <line x1="4" x2="20" y1="6" y2="6"/>
-                        <line x1="4" x2="20" y1="18" y2="18"/>
-                    </React.Fragment>
-                ),
-                Send: (
-                    <React.Fragment>
-                        <path d="m22 2-7 20-4-9-9-4Z"/>
-                        <path d="M22 2 11 13"/>
-                    </React.Fragment>
-                ),
-                Cpu: (
-                    <React.Fragment>
-                        <rect width="16" height="16" x="4" y="4" rx="2"/>
-                        <rect width="6" height="6" x="9" y="9" rx="1"/>
-                        <path d="M15 2v2"/><path d="M15 20v2"/><path d="M2 15h2"/><path d="M2 9h2"/><path d="M20 15h2"/><path d="M20 9h2"/><path d="M9 2v2"/><path d="M9 20v2"/>
-                    </React.Fragment>
-                ),
-                Zap: <path d="M13 2 L3 14 L12 14 L11 22 L21 10 L12 10 L13 2 Z" />
+                X: <React.Fragment><path d="M18 6 6 18"/><path d="m6 6 12 12"/></React.Fragment>,
+                Menu: <React.Fragment><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></React.Fragment>,
+                Send: <React.Fragment><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></React.Fragment>,
+                Sun: <React.Fragment><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></React.Fragment>,
+                Moon: <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>,
+                Award: <React.Fragment><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></React.Fragment>,
+                Cpu: <React.Fragment><rect width="16" height="16" x="4" y="4" rx="2"/><rect width="6" height="6" x="9" y="9" rx="1"/><path d="M15 2v2"/><path d="M15 20v2"/><path d="M2 15h2"/><path d="M2 9h2"/><path d="M20 15h2"/><path d="M20 9h2"/><path d="M9 2v2"/><path d="M9 20v2"/></React.Fragment>
             };
             return (
                 <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
@@ -115,22 +87,12 @@
             );
         };
 
-        const KNOWLEDGE_BASE = {
-            "default": "我是 Diamond 的數位助理。您可以詢問關於她的「流量增長」、「AI 工作流」或「最新專案 nuva」。",
-            "流量": "Diamond 在 Roomie 國際中文版時期，8 個月內達成單月 1.38M PV，並透過 SEO 策略讓每週穩定破百篇內容登上 Google Discover。",
-            "營收": "Diamond 成功建立廣告與導購營收模型，在流量突破百萬後，達成單月約 12 萬廣告收入與 30-40 萬的媒體導購營收。",
-            "ai": "Diamond 擅長利用 Google Apps Script (GAS) 與 LLM 打造自動化產線，包含資訊搜集、多語翻譯與 SEO 校對，極大化單人營運效能。",
-            "tokyo": "Tokyo Edit 是 Diamond 的個人自媒體品牌，10 天內獲得 3.3 萬粉絲，單篇最高瀏覽達 91 萬次，並與日本選享家實現專業分工的商務模式。",
-            "nuva": "在 nuva 專案中，Diamond 負責亞太市場開發，成功將傳產需求溢價 300%，並在一週內談成 Red Bull 贊助。",
-            "經歷": "Diamond 曾任職於 TNL Mediagene、iCook (寶利拾)、應援科技、博客來、誠品生活與雄獅旅行社。詳情請見網站下方 Archive 區塊。",
-            "聯絡": "您可以透過電子郵件 fengdiamond@gmail.com 聯繫 Diamond。"
-        };
-
         const App = () => {
+            const [isDark, setIsDark] = useState(true);
             const [isMenuOpen, setIsMenuOpen] = useState(false);
             const [isChatOpen, setIsChatOpen] = useState(false);
             const [chatInput, setChatInput] = useState("");
-            const [chatHistory, setChatHistory] = useState([{ role: 'ai', text: 'Hi, 我是 Diamond 的數位分身。讓我們開始探索吧。' }]);
+            const [chatHistory, setChatHistory] = useState([{ role: 'ai', text: '您好，我是 Diamond 的數位分身。您可以問我關於她的技術背景或職涯成就。' }]);
             const [isTyping, setIsTyping] = useState(false);
             const [scrollProgress, setScrollProgress] = useState(0);
             const [cursorPos, setCursorPos] = useState({ x: -100, y: -100 });
@@ -138,10 +100,7 @@
             const chatEndRef = useRef(null);
 
             useEffect(() => {
-                const handleScroll = () => {
-                    const progress = window.scrollY / (document.documentElement.scrollHeight - window.innerHeight);
-                    setScrollProgress(progress);
-                };
+                const handleScroll = () => setScrollProgress(window.scrollY / (document.documentElement.scrollHeight - window.innerHeight));
                 const moveCursor = (e) => setCursorPos({ x: e.clientX, y: e.clientY });
                 window.addEventListener('scroll', handleScroll);
                 window.addEventListener('mousemove', moveCursor);
@@ -151,6 +110,11 @@
                 };
             }, []);
 
+            const toggleTheme = () => {
+                setIsDark(!isDark);
+                document.documentElement.classList.toggle('dark');
+            };
+
             const handleSendMessage = () => {
                 if (!chatInput.trim()) return;
                 const input = chatInput.toLowerCase();
@@ -159,200 +123,358 @@
                 setIsTyping(true);
 
                 setTimeout(() => {
-                    let response = KNOWLEDGE_BASE.default;
-                    if (input.includes("流量") || input.includes("pv")) response = KNOWLEDGE_BASE.流量;
-                    else if (input.includes("營收") || input.includes("錢") || input.includes("賺")) response = KNOWLEDGE_BASE.營收;
-                    else if (input.includes("ai") || input.includes("自動化")) response = KNOWLEDGE_BASE.ai;
-                    else if (input.includes("tokyo")) response = KNOWLEDGE_BASE.tokyo;
-                    else if (input.includes("nuva") || input.includes("專案")) response = KNOWLEDGE_BASE.nuva;
-                    else if (input.includes("經歷")) response = KNOWLEDGE_BASE.經歷;
-                    setChatHistory(prev => [...prev, { role: 'ai', text: response }]);
+                    const responses = {
+                        "流量": "Diamond 在 Roomie 國際中文版時期，開站 8 個月即達成單月 1.38M PV，並透過技術 SEO 讓每週穩定破百篇內容登上 Google Discover。",
+                        "ai": "Diamond 擅長將 AI 工作流植入營運。利用 GAS + LLM 打造自動化內容產線（資訊搜整、翻譯重構、SEO 校對），提升營運效率 200% 以上。",
+                        "營收": "成功建立媒體變現模型，流量突破百萬後，達成單月約 12 萬廣告收入與 30-40 萬的媒體導購營收（Affiliate Commerce）。",
+                        "專案": "Diamond 在 nuva 擔任商務總監期間，成功將案源價值從 10 萬提升至 30 萬（300% 溢價），並達成 Red Bull 贊助開發。",
+                        "學歷": "國立臺北教育大學、東吳大學中文系畢業。並完成 ALPHA Camp JavaScript 全端開發課程。",
+                        "default": "這是一個很好的問題。Diamond 的核心競爭力在於結合內容底蘊與 AI 技術增長，您可以詢問關於她的「流量實績」或「商務開發」。"
+                    };
+                    let reply = responses.default;
+                    if (input.includes("流量") || input.includes("pv")) reply = responses.流量;
+                    else if (input.includes("ai") || input.includes("技術")) reply = responses.ai;
+                    else if (input.includes("營收") || input.includes("錢")) reply = responses.營收;
+                    else if (input.includes("專案") || input.includes("nuva")) reply = responses.專案;
+                    else if (input.includes("學歷") || input.includes("大學")) reply = responses.學歷;
+
+                    setChatHistory(prev => [...prev, { role: 'ai', text: reply }]);
                     setIsTyping(false);
                     setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
                 }, 600);
             };
 
             return (
-                <div className="relative">
+                <div className="relative font-sans antialiased">
                     <div className="noise"></div>
                     <div className="cursor-circle hidden md:block" style={{ left: cursorPos.x - 16, top: cursorPos.y - 16 }}></div>
-                    <div className="fixed top-0 left-0 h-1 bg-indigo-600 z-[10001] transition-all" style={{ width: `${scrollProgress * 100}%` }}></div>
+                    <div className="fixed top-0 left-0 h-1 bg-indigo-600 z-[10001] transition-all duration-75" style={{ width: `${scrollProgress * 100}%` }}></div>
 
-                    <nav className="fixed top-0 w-full z-[1000] px-8 py-8 flex justify-between items-center mix-blend-difference">
-                        <div className="text-2xl font-black tracking-tighter uppercase-all">DIAMOND <span className="text-indigo-600">FENG</span></div>
-                        <div className="hidden md:flex space-x-12 text-[10px] uppercase tracking-[0.3em] font-bold uppercase-all">
-                            <a href="#growth" className="hover:text-indigo-500 transition-colors">Growth</a>
-                            <a href="#lab" className="hover:text-indigo-500 transition-colors">AI Lab</a>
-                            <a href="#archive" className="hover:text-indigo-500 transition-colors">Archive</a>
-                            <a href="#contact" className="border-b border-indigo-600 pb-1">Get in touch</a>
+                    {/* Navigation */}
+                    <nav className="fixed top-0 w-full z-[1000] px-8 py-6 flex justify-between items-center bg-white/80 dark:bg-black/80 backdrop-blur-md border-b border-zinc-200 dark:border-zinc-800">
+                        <div className="text-2xl font-black tracking-tighter uppercase">Diamond <span className="text-indigo-600">Feng</span></div>
+                        <div className="hidden md:flex space-x-10 text-[11px] font-black tracking-widest uppercase">
+                            <a href="#growth" className="hover:text-indigo-600 transition-colors">增長指標</a>
+                            <a href="#archive" className="hover:text-indigo-600 transition-colors">核心經歷</a>
+                            <a href="#early" className="hover:text-indigo-600 transition-colors">早期實績</a>
+                            <a href="#about" className="hover:text-indigo-600 transition-colors">關於我</a>
                         </div>
-                        <button onClick={() => setIsMenuOpen(true)} className="md:hidden text-white"><Icon name="Menu" /></button>
+                        <div className="flex items-center space-x-4">
+                            <button onClick={toggleTheme} className="p-2.5 bg-zinc-100 dark:bg-zinc-800 rounded-full text-indigo-600 shadow-sm">
+                                {isDark ? <Icon name="Sun" size={20} /> : <Icon name="Moon" size={20} />}
+                            </button>
+                            <button onClick={() => setIsMenuOpen(true)} className="md:hidden text-indigo-600"><Icon name="Menu" size={24} /></button>
+                        </div>
                     </nav>
 
-                    <section className="min-h-screen flex flex-col justify-center px-6 md:px-24 relative overflow-hidden pt-20">
-                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-indigo-600/5 blur-[120px] rounded-full"></div>
+                    {/* Hero Section */}
+                    <section className="min-h-screen flex flex-col justify-center px-6 md:px-24 relative pt-24 pb-12 overflow-hidden">
+                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-indigo-600/10 dark:bg-indigo-600/5 blur-[120px] rounded-full"></div>
                         
-                        <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-12 items-center fade-in">
+                        <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-16 items-center fade-in">
                             <div className="lg:col-span-8">
-                                <div className="flex items-center space-x-3 mb-6">
-                                    <Icon name="Sparkles" className="text-indigo-500" size={16} />
-                                    <span className="text-[10px] font-black uppercase tracking-[0.5em] text-indigo-500 uppercase-all">Content Architect</span>
+                                <div className="flex items-center space-x-3 mb-8">
+                                    <Icon name="Sparkles" className="text-indigo-600" size={20} />
+                                    <span className="text-xs font-black tracking-[0.4em] text-indigo-600 uppercase">AI Driven Content Expert</span>
                                 </div>
-                                <h1 className="text-[10vw] font-black leading-[0.85] tracking-tighter mb-10 uppercase-all">
-                                    Diamond <br />
-                                    <span className="italic serif text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-500 uppercase-all">Feng.</span>
+                                <h1 className="text-[10vw] font-black leading-[0.8] tracking-tighter mb-10">
+                                    馮興怡 <br />
+                                    <span className="italic serif text-transparent bg-clip-text bg-gradient-to-r from-zinc-900 to-zinc-400 dark:from-white dark:to-zinc-600">Diamond.</span>
                                 </h1>
-                                <p className="text-xl md:text-3xl text-gray-400 font-light leading-snug tracking-tight max-w-2xl mb-12">
-                                    用 AI 賦能內容，讓故事規模化增長。<br/>
-                                    專注於 <span className="text-white font-medium italic serif uppercase-all">爆發性流量</span> 與 <span className="text-white font-medium italic serif uppercase-all">商務變現</span>。
+                                <p className="text-2xl md:text-4xl text-zinc-600 dark:text-zinc-400 font-light max-w-2xl mb-12 leading-snug">
+                                    內容營運與增長專家。專注於 <span className="text-indigo-600 font-bold italic serif">爆發性流量</span>、<span className="text-indigo-600 font-bold italic serif">AI 工作流</span> 與 <span className="text-indigo-600 font-bold italic serif">商務變現</span>。
                                 </p>
-                                <div className="flex space-x-6">
-                                    <a href="#growth" className="bg-indigo-600 hover:bg-indigo-500 text-white px-8 py-4 text-xs font-bold tracking-widest uppercase transition-all uppercase-all">Explore Growth</a>
-                                    <a href="mailto:fengdiamond@gmail.com" className="border border-white/20 hover:border-white text-white px-8 py-4 text-xs font-bold tracking-widest uppercase transition-all uppercase-all">Contact Me</a>
+                                <div className="flex flex-wrap gap-6">
+                                    <a href="#growth" className="bg-indigo-600 hover:bg-indigo-700 text-white px-10 py-5 text-sm font-black tracking-widest uppercase transition-all shadow-2xl">查看增長策略</a>
+                                    <a href="mailto:fengdiamond@gmail.com" className="border-2 border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-900 px-10 py-5 text-sm font-black tracking-widest uppercase transition-all">聯繫 Diamond</a>
                                 </div>
                             </div>
                             
-                            <div className="lg:col-span-4 relative flex justify-center lg:justify-end">
-                                <div className="photo-float relative w-64 h-80 md:w-80 md:h-[450px] bg-zinc-900 border border-white/10 overflow-hidden shadow-2xl flex items-center justify-center">
+                            <div className="lg:col-span-4 flex justify-center">
+                                <div className="photo-float relative w-72 h-96 md:w-96 md:h-[550px] border-[12px] border-white dark:border-zinc-900 shadow-2xl overflow-hidden bg-zinc-200 dark:bg-zinc-800">
                                     {!imgError ? (
-                                        <img 
-                                            src="個人照_Diamond_1.jpg" 
-                                            alt="Diamond Feng" 
-                                            className="w-full h-full object-cover"
-                                            onError={() => setImgError(true)}
-                                        />
+                                        <img src="個人照_Diamond_1.jpg" alt="Diamond Feng" className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-1000" onError={() => setImgError(true)} />
                                     ) : (
-                                        <div className="text-center p-10">
-                                            <Icon name="Sparkles" size={48} className="text-indigo-600 mb-4 mx-auto opacity-20" />
-                                            <div className="text-[10px] text-gray-600 italic uppercase tracking-widest leading-relaxed uppercase-all">Diamond Feng<br/>Strategic Specialist</div>
-                                        </div>
+                                        <div className="w-full h-full flex items-center justify-center italic text-zinc-400 font-serif text-xl">Diamond Feng</div>
                                     )}
-                                    <div className="absolute top-4 right-4 text-indigo-500 mix-blend-difference">
-                                        <div className="w-8 h-[1px] bg-current mb-1"></div>
-                                        <div className="w-4 h-[1px] bg-current"></div>
-                                    </div>
                                 </div>
-                                <div className="absolute -z-10 top-10 right-10 lg:right-[-20px] w-64 h-80 md:w-80 md:h-[450px] border border-indigo-600/30"></div>
                             </div>
                         </div>
                     </section>
 
-                    <section id="growth" className="py-24 px-6 md:px-24">
-                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 h-auto">
-                            <div className="md:col-span-2 md:row-span-2 bg-[#111] border border-white/5 p-12 flex flex-col justify-between group overflow-hidden relative">
+                    {/* Executive Summary */}
+                    <section id="about" className="py-40 px-6 md:px-24 bg-zinc-50 dark:bg-[#080808] border-y border-zinc-200 dark:border-zinc-900">
+                        <div className="max-w-5xl mx-auto">
+                            <h2 className="text-xs font-black tracking-[0.6em] text-indigo-600 mb-16 uppercase">Executive Summary | 個人總覽</h2>
+                            <p className="text-3xl md:text-5xl font-serif italic text-zinc-800 dark:text-zinc-100 leading-tight mb-16">
+                                具備橫跨實體零售、旅遊、電商與媒體領域超過 10 年經驗。曾於一年內達成突破 1.38M PV，建立月營收逾 40 萬之變現模型。
+                            </p>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-16 body-text text-zinc-500 dark:text-zinc-400 leading-relaxed font-light">
+                                <p>具備從採訪寫作到網站內容產品規劃之全流程經驗。擅長透過跨部門溝通，將分散資訊整合為具體可執行之方案。曾協助優化網站架構與內容，提升用戶體驗，並精通利用 GAS + LLM 工作流提升營運效率達 200% 以上。</p>
+                                <p>具備強大陌生開發 (Cold Outreach) 能力，曾於一個月內開發泰港亞太市場。成功將傳統產業需求轉化為高溢價深度課程專案（300% 溢價），並達成國際品牌如 Red Bull 贊助開發。</p>
+                            </div>
+                        </div>
+                    </section>
+
+                    {/* Stats Grid */}
+                    <section id="growth" className="py-32 px-6 md:px-24">
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 h-auto">
+                            <div className="md:col-span-2 md:row-span-2 bg-white dark:bg-[#111] border border-zinc-200 dark:border-white/5 p-16 flex flex-col justify-between group relative overflow-hidden shadow-sm">
                                 <div className="relative z-10">
-                                    <div className="text-[10px] font-black uppercase text-indigo-500 mb-6 italic uppercase tracking-widest uppercase-all">Growth Metric</div>
-                                    <h4 className="text-8xl font-black tracking-tighter transition-all group-hover:text-indigo-500 uppercase-all">1.38M</h4>
-                                    <p className="text-xl font-bold uppercase text-gray-400 uppercase-all">Monthly Page Views</p>
+                                    <div className="text-xs font-black tracking-widest text-indigo-600 mb-8 italic uppercase">Growth Milestone</div>
+                                    <h4 className="text-9xl md:text-[10rem] font-black tracking-tighter group-hover:scale-105 transition-transform duration-1000">1.38M</h4>
+                                    <p className="text-2xl font-black uppercase text-zinc-400 tracking-tighter">Monthly Page Views</p>
                                 </div>
-                                <div className="absolute top-0 right-0 p-10 opacity-5 -rotate-12 translate-x-10 -translate-y-10 group-hover:rotate-0 group-hover:translate-x-0 group-hover:translate-y-0 transition-all duration-700">
-                                    <Icon name="TrendingUp" size={200} />
-                                </div>
+                                <Icon name="TrendingUp" className="absolute top-0 right-0 p-12 opacity-5 dark:opacity-10" size={350} />
                             </div>
-                            <div className="md:col-span-2 bg-indigo-600 p-10 flex flex-col justify-center text-white min-h-[150px]">
-                                <div className="text-5xl font-black tracking-tighter italic uppercase uppercase-all">33,000+ Fans</div>
-                                <p className="text-sm uppercase tracking-widest opacity-80 uppercase uppercase-all">10 Days Growth @Tokyo Edit</p>
+                            <div className="md:col-span-2 bg-indigo-600 p-12 flex flex-col justify-center text-white shadow-2xl">
+                                <div className="text-6xl md:text-7xl font-black tracking-tighter italic">33,000+ Fans</div>
+                                <p className="text-lg uppercase tracking-[0.2em] opacity-80 mt-4 font-bold italic">10 Days Growth @Tokyo Edit</p>
                             </div>
-                            <div className="bg-[#111] border border-white/5 p-8 flex flex-col justify-between hover:bg-white hover:text-black transition-all">
-                                <div className="text-[10px] font-black uppercase text-gray-500 italic uppercase-all">BD Yield</div>
-                                <div className="text-4xl font-black italic tracking-tighter uppercase-all">300%</div>
+                            <div className="bg-white dark:bg-[#111] border border-zinc-200 dark:border-white/5 p-12 flex flex-col justify-between hover:bg-indigo-600 hover:text-white transition-all duration-500 group shadow-lg">
+                                <div className="text-xs font-black uppercase italic opacity-40 group-hover:opacity-100">Consultancy Yield</div>
+                                <div className="text-7xl font-black tracking-tighter">300%</div>
+                                <p className="text-xs font-black uppercase tracking-widest opacity-60 group-hover:opacity-100">Project Value Premium</p>
                             </div>
-                            <div className="bg-white text-black p-8 flex flex-col justify-between">
-                                <div className="text-[10px] font-black uppercase text-gray-400 font-bold uppercase-all">Revenue</div>
-                                <div className="text-2xl font-black tracking-tighter uppercase leading-none uppercase-all">400K+ <br/><span className="text-xs uppercase-all">Monthly</span></div>
+                            <div className="bg-zinc-900 dark:bg-white text-white dark:text-black p-12 flex flex-col justify-between shadow-xl">
+                                <div className="text-xs font-black uppercase opacity-40">Monthly Revenue</div>
+                                <div className="text-4xl font-black tracking-tighter">400K+ <br/><span className="text-sm font-black opacity-60">NTD (Ads + Commerce)</span></div>
                             </div>
                         </div>
                     </section>
 
-                    <section id="lab" className="py-40 px-6 md:px-24 bg-black">
-                        <div className="max-w-7xl mx-auto flex flex-col lg:flex-row gap-24">
+                    {/* Methodology */}
+                    <section id="lab" className="py-48 px-6 md:px-24 bg-zinc-50 dark:bg-black overflow-hidden border-y border-zinc-200 dark:border-zinc-900">
+                        <div className="max-w-7xl mx-auto flex flex-col lg:flex-row gap-32 items-center">
                             <div className="lg:w-1/2">
-                                <h3 className="text-6xl font-black tracking-tighter mb-16 uppercase italic uppercase-all">The <br/><span className="text-indigo-500 uppercase-all">AI Soul.</span></h3>
-                                <div className="space-y-12">
+                                <h3 className="text-7xl md:text-9xl font-black tracking-tighter mb-20 uppercase italic leading-none">
+                                    The <br/><span className="text-indigo-600">AI Soul.</span>
+                                </h3>
+                                <div className="space-y-20">
                                     {[
-                                        { t: "Workflow Architecture", d: "利用 GAS 與 LLM 打造無人化內容產線。實現單人運營百萬流量的效率革命。" },
-                                        { t: "Algorithm Mastery", d: "深諳 Discover 佈局。每週穩定破百篇內容登上 Discover，將流量精準轉化為營收。" },
-                                        { t: "Strategic BD", d: "具備強大的 Cold Outreach 能力。一週內開發 Red Bull 贊助並對接大廠。" }
+                                        { t: "自動化內容產線 | Workflow", d: "利用 Google Apps Script (GAS) 與大型語言模型 (LLM) 打造無人化內容產線。實現資訊自動搜集、多語翻譯、語義重構與 SEO 自動校對，極大化單人運營效能。" },
+                                        { t: "演算法精準佈局 | Algorithm", d: "深諳 Google Discover 推送邏輯。在 Roomie 時期達成每週穩定破百篇內容登上 Discover，將爆發性流量精準轉化為實質商務營收。" },
+                                        { t: "戰略商務開發 | Strategic BD", d: "具備極強 Cold Outreach 能力。於一個月內陌生開發泰、港市場。成功將傳產需求轉化為高溢價深度課程，並獲得國際品牌 Red Bull 贊助開發。" }
                                     ].map((item, i) => (
-                                        <div key={i} className="border-l-2 border-white/10 pl-8 hover:border-indigo-600 transition-all text-white">
-                                            <h5 className="text-lg font-black uppercase tracking-widest mb-4 uppercase-all">{item.t}</h5>
-                                            <p className="text-gray-500 text-sm font-light">{item.d}</p>
+                                        <div key={i} className="border-l-8 border-zinc-200 dark:border-zinc-800 pl-12 hover:border-indigo-600 transition-all group">
+                                            <h5 className="text-2xl font-black uppercase tracking-tight mb-4 group-hover:text-indigo-600 transition-colors">{item.t}</h5>
+                                            <p className="text-zinc-500 dark:text-zinc-400 body-text font-light leading-relaxed">{item.d}</p>
                                         </div>
                                     ))}
                                 </div>
                             </div>
                             <div className="lg:w-1/2 flex items-center justify-center relative">
-                                <div className="w-80 h-80 border border-white/5 rounded-full flex items-center justify-center animate-spin-slow">
-                                    <div className="w-60 h-60 border border-indigo-600/30 rounded-full animate-spin-reverse"></div>
+                                <div className="w-[30rem] h-[30rem] md:w-[40rem] md:h-[40rem] border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-full flex items-center justify-center animate-spin-slow">
+                                    <div className="w-[20rem] h-[20rem] md:w-[30rem] md:h-[30rem] border-2 border-indigo-600/20 rounded-full"></div>
+                                    <Icon name="Cpu" size={150} className="absolute text-indigo-600 opacity-10" />
                                 </div>
-                                <div className="absolute text-center"><div className="text-3xl font-black italic serif uppercase text-white uppercase-all">Data Driven</div></div>
+                                <div className="absolute text-center bg-white dark:bg-black p-8 shadow-2xl">
+                                    <div className="text-sm font-black tracking-[0.5em] text-indigo-600 mb-4 uppercase">Phase 01: Intelligent Scale</div>
+                                    <div className="text-5xl md:text-7xl font-black italic serif uppercase">Data Lab</div>
+                                </div>
                             </div>
                         </div>
                     </section>
 
-                    <section id="archive" className="py-40 px-6 md:px-24 bg-[#050505]">
-                        <div className="max-w-4xl mx-auto">
-                            <h3 className="text-5xl font-black tracking-tighter mb-24 uppercase italic underline decoration-indigo-600 uppercase-all">Archive.</h3>
-                            <div className="space-y-12">
+                    {/* Career Archive - The full version */}
+                    <section id="archive" className="py-48 px-6 md:px-24">
+                        <div className="max-w-6xl mx-auto">
+                            <h3 className="text-6xl md:text-8xl font-black tracking-tighter mb-32 uppercase italic underline decoration-indigo-600 underline-offset-[20px]">Career Archive.</h3>
+                            
+                            <div className="space-y-32">
                                 {[
-                                    { c: "nuva & couchspace", r: "Strategic Consultant", p: "2025.09 - 2026.01", d: "全陌生開發台港泰通路，專案溢價 300%。" },
-                                    { c: "TNL Mediagene (Roomie)", r: "Editor in Chief", p: "2024.03 - 2025.06", d: "1.38M PV，每週百篇 Discover，月營收破 40 萬。" },
-                                    { c: "寶利拾 (iCook)", r: "Media Lead", p: "2023.10 - 2025.06", d: "監管全媒體矩陣（愛料理、電影神搜、iGood、every little d）之技術 SEO 優化。" },
-                                    { c: "博客來 (OKAPI)", r: "Web Editor & PM", p: "2020.01 - 2022.05", d: "主站內容授權洽談與電子報後台 UX 優化。" }
+                                    { 
+                                        c: "Tokyo Edit (個人自媒體品牌)", 
+                                        r: "創辦人暨總編輯 Founder & Editor-in-Chief", 
+                                        p: "2025.04 – 至今", 
+                                        d: "建立 10 天內突破 3 萬粉絲。單篇最高 91 萬次瀏覽、1.8 萬次互動。移植 AI 工作流實現高頻選題與產出。與日本選享家建立戰略合作，實現專業分工商務模式。首月達成日本金鳥 (Kincho) 合作，對接 HOLA、中台興化學-鱷魚蚊香、Cure Care 等專案。" 
+                                    },
+                                    { 
+                                        c: "Strategic Consultancy (專案制)", 
+                                        r: "高階商務顧問 Strategic Consultant", 
+                                        p: "2025.09 – 2026.01", 
+                                        d: "針對三十代職涯探索之顧問專案。於 nuva (AI 教育網紅品牌) 負責亞太跨國陌生開發（泰港），顧問溢價 300%，一週內開發 Red Bull 贊助並引薦創辦人擔任 Red Bull Basement 評審。於 couchspace 策劃緯穎科技、佳能台灣 2026 年度員工福利方案，主導台達電 HRV 檢測活動。" 
+                                    },
+                                    { 
+                                        c: "Coupang Taiwan", 
+                                        r: "商城專案副理 Assistant Manager, Catalog Operation Management", 
+                                        p: "2025.06 – 2025.08", 
+                                        d: "主導商城台灣在地化規劃，制定規格與作業指引，標準化用語。建立任務 SOP 與品質抽檢機制。以 GAS 建立自動化營運看板與內容檢核系統，運用 AI 處理大量重複性資料整理與文案模板化，確保交付細節一致。" 
+                                    },
+                                    { 
+                                        c: "TNL Mediagene (Roomie 國際中文版)", 
+                                        r: "負責人暨總編輯 Editor in Chief", 
+                                        p: "2024.03 – 2025.06", 
+                                        d: "從 0 規劃產品藍圖與落地路線。8 個月達成單月 1.38M PV、66 萬 UV。優化技術 SEO 達成每週穩定百篇內容登上 Google Discover。實現單月廣告營收 12 萬、媒體導購營收 30-40 萬（總月營收逾 40 萬）。啟動 Threads 經營於 5 個月累積總瀏覽突破 200 萬次。" 
+                                    },
+                                    { 
+                                        c: "寶利拾 (iCook)・TNL Mediagene", 
+                                        r: "內容營運產品經理 Content Operation PM / Media Lead", 
+                                        p: "2023.10 – 2025.06", 
+                                        d: "監管全媒體矩陣（愛料理、愛料理生活誌、電影神搜、Roomie、iGood、歐搜哇、every little d）之 SEO 報表與技術優化。管理《愛料理》內容營運，包含策略、策展與商務合作。協調集團內部跨部門產品管理流程與業務合作機會開發。" 
+                                    },
+                                    { 
+                                        c: "應援科技 (Oen)", 
+                                        r: "內容總監 Head of Content & PM", 
+                                        p: "2022.11 – 2023.09", 
+                                        d: "主導內容行銷企劃與撰寫，顯著提升流程效率。負責社群增長操作，提升粉絲數破千人。主導外部夥伴專業溝通，負責贊助協商與活動執行，成功爭取大港開唱、Generative AI 年會等多項合作贊助。" 
+                                    },
+                                    { 
+                                        c: "博客來 (OKAPI 閱讀生活誌)", 
+                                        r: "網站編輯 Web/Content Editor & PM", 
+                                        p: "2020.01 – 2022.05", 
+                                        d: "負責博客來主站與 OKAPI 行銷文案、書評撰寫。重新設計電子報後台 UX 提升用戶體驗。管理首頁介面元件與廣告曝光。擔任團隊對外內容授權負責人，處理線上線下簽約逾百次。" 
+                                    },
+                                    { 
+                                        c: "雄獅旅行社", 
+                                        r: "主題旅遊部 產品企劃 Product Planning Specialist", 
+                                        p: "2019.11 – 2019.12", 
+                                        d: "協助優化熱門旅遊產品（紐澳非），達成降低售價但不減質量的開發目標。重編行程文案描述並重新設計網頁視覺呈現。" 
+                                    },
+                                    { 
+                                        c: "誠品生活", 
+                                        r: "商品行銷 & 《時光》編輯 Specialist of Retail MKT", 
+                                        p: "2018.04 – 2018.09", 
+                                        d: "主導誠品敦南店活動策展，負責企劃撰寫至新聞稿發佈。執行社群策略規劃與商品攝影。擔任主題刊物《時光》編輯，獨立執行訪問、選品與製作。" 
+                                    }
                                 ].map((item, i) => (
-                                    <div key={i} className="group border-b border-white/5 pb-10 hover:bg-white/5 px-4 transition-all">
-                                        <div className="flex justify-between items-end mb-4 text-white">
-                                            <div className="text-xl font-black tracking-tighter uppercase uppercase-all">{item.c}</div>
-                                            <div className="text-[10px] font-black uppercase text-gray-500 uppercase-all">{item.p}</div>
+                                    <div key={i} className="group grid grid-cols-1 lg:grid-cols-12 gap-12 border-b border-zinc-100 dark:border-zinc-800 pb-20 hover:bg-zinc-50 dark:hover:bg-zinc-900/50 transition-all p-8">
+                                        <div className="lg:col-span-4">
+                                            <div className="text-sm font-black uppercase text-indigo-600 mb-4 italic tracking-widest">{item.p}</div>
+                                            <div className="text-3xl font-black tracking-tighter uppercase group-hover:text-indigo-600 transition-colors leading-tight">{item.c}</div>
                                         </div>
-                                        <div className="text-xs font-bold italic text-indigo-500 mb-2 uppercase tracking-widest uppercase-all">{item.r}</div>
-                                        <p className="text-xs text-gray-600 leading-relaxed uppercase">{item.d}</p>
+                                        <div className="lg:col-span-8 lg:border-l-4 lg:border-zinc-100 lg:dark:border-zinc-800 lg:pl-16">
+                                            <div className="text-lg font-bold italic text-zinc-500 dark:text-zinc-500 mb-6 uppercase tracking-widest leading-relaxed">{item.r}</div>
+                                            <p className="body-text text-zinc-600 dark:text-zinc-400 font-light leading-relaxed">{item.d}</p>
+                                        </div>
                                     </div>
                                 ))}
                             </div>
                         </div>
                     </section>
 
-                    <footer id="contact" className="py-40 bg-black text-center relative overflow-hidden">
-                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[15vw] font-black text-white/[0.02] italic uppercase uppercase-all">DIAMOND</div>
-                        <div className="relative z-10 text-white">
-                            <h2 className="text-7xl font-black tracking-tighter mb-12 italic uppercase leading-none uppercase-all">Let's scale <br/><span className="text-indigo-600 uppercase-all">your story.</span></h2>
-                            <a href="mailto:fengdiamond@gmail.com" className="text-xl font-black hover:text-indigo-500 transition-all uppercase underline uppercase-all">fengdiamond@gmail.com</a>
+                    {/* Early Roots, Education & Skills */}
+                    <section className="py-48 bg-zinc-50 dark:bg-zinc-950 px-6 md:px-24 border-t border-zinc-200 dark:border-zinc-900">
+                        <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-24">
+                            {/* Early Career */}
+                            <div className="lg:col-span-1">
+                                <h3 className="text-xs font-black tracking-[0.5em] text-zinc-400 mb-16 uppercase">Early Roots | 早期實績</h3>
+                                <div className="space-y-10">
+                                    {[
+                                        { t: "香港輔仁媒體《爾雅集》", d: "專欄作者 (2015-2017)" },
+                                        { t: "2B Magazine", d: "創辦人暨總編輯 (2016-2017)" },
+                                        { t: "MPlus 云閱讀", d: "專欄作者 (2014-2015)" },
+                                        { t: "第五十屆金馬影展", d: "種子評審 (2013)" }
+                                    ].map((item, i) => (
+                                        <div key={i} className="border-b border-zinc-200 dark:border-zinc-800 pb-6 group">
+                                            <div className="text-xl font-serif italic text-zinc-800 dark:text-zinc-200 group-hover:text-indigo-600 transition-colors uppercase">{item.t}</div>
+                                            <div className="text-xs font-bold text-zinc-400 mt-2 uppercase tracking-widest">{item.d}</div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                            
+                            {/* Education */}
+                            <div className="lg:col-span-1">
+                                <h3 className="text-xs font-black tracking-[0.5em] text-zinc-400 mb-16 uppercase">Academic | 學歷背景</h3>
+                                <div className="space-y-12">
+                                    <div className="border-l-4 border-indigo-600 pl-8">
+                                        <div className="text-xs font-black uppercase opacity-40 mb-2 italic tracking-widest text-indigo-600">Tech Training</div>
+                                        <div className="text-2xl font-black uppercase tracking-tight">ALPHA Camp</div>
+                                        <div className="text-sm italic text-zinc-500 mt-2">JavaScript 全端開發課程 (2022)</div>
+                                    </div>
+                                    <div className="border-l-4 border-indigo-600 pl-8">
+                                        <div className="text-xs font-black uppercase opacity-40 mb-2 italic tracking-widest text-indigo-600">University</div>
+                                        <div className="text-2xl font-black uppercase tracking-tight">國立臺北教育大學 | 東吳大學</div>
+                                        <div className="text-sm italic text-zinc-500 mt-2 leading-relaxed">語文與創作學系文學創作組 | 中國文學系</div>
+                                        <div className="text-xs font-bold text-indigo-500 mt-4 uppercase tracking-tighter italic">2017 出版攝影散文集《大娛樂家》<br/>ISBN 978-957-43-4386-7</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Skills & Certs */}
+                            <div className="lg:col-span-1">
+                                <h3 className="text-xs font-black tracking-[0.5em] text-zinc-400 mb-16 uppercase">Skills & Certs | 技能證照</h3>
+                                <div className="space-y-8">
+                                    <div className="flex flex-wrap gap-3">
+                                        {["AI Workflow", "GAS", "Growth Hacking", "SEO", "Technical BD", "Content Product Management"].map(skill => (
+                                            <span key={skill} className="px-4 py-2 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-[10px] font-black uppercase tracking-widest text-zinc-600 dark:text-zinc-400 hover:border-indigo-600 transition-all">{skill}</span>
+                                        ))}
+                                    </div>
+                                    <div className="pt-8 space-y-4 border-t border-zinc-200 dark:border-zinc-800">
+                                        <div className="flex items-center space-x-4">
+                                            <Icon name="Award" className="text-indigo-600" size={20} />
+                                            <span className="text-sm font-bold uppercase tracking-widest">TOEIC 730 | IELTS 5.5</span>
+                                        </div>
+                                        <div className="flex items-center space-x-4 opacity-50">
+                                            <Icon name="Award" className="text-zinc-400" size={20} />
+                                            <span className="text-sm font-bold uppercase tracking-widest italic">澳洲義式咖啡合格證照</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    {/* Footer */}
+                    <footer id="contact" className="py-48 bg-white dark:bg-black text-center relative overflow-hidden">
+                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[18vw] font-black text-zinc-100 dark:text-white/[0.02] italic uppercase pointer-events-none">DIAMOND</div>
+                        <div className="relative z-10 px-6">
+                            <h2 className="text-7xl md:text-[10rem] font-black tracking-tighter mb-16 italic uppercase leading-[0.75]">Let's scale <br/><span className="text-indigo-600">your story.</span></h2>
+                            <div className="flex flex-col md:flex-row justify-center items-center gap-16 mt-24">
+                                <a href="mailto:fengdiamond@gmail.com" className="text-3xl md:text-5xl font-black tracking-tighter hover:text-indigo-600 transition-all underline decoration-8 underline-offset-8 decoration-indigo-600/30 hover:decoration-indigo-600">fengdiamond@gmail.com</a>
+                            </div>
+                            <div className="mt-32 flex justify-center space-x-16 text-sm font-black uppercase tracking-[0.3em] text-zinc-400">
+                                <a href="#" className="hover:text-indigo-600 border-b-2 border-transparent hover:border-indigo-600 pb-2 transition-all">LinkedIn</a>
+                                <a href="#" className="hover:text-indigo-600 border-b-2 border-transparent hover:border-indigo-600 pb-2 transition-all">Threads</a>
+                            </div>
+                            <div className="mt-48 pt-10 border-t border-zinc-100 dark:border-zinc-900 text-[10px] text-zinc-400 font-black uppercase tracking-[0.6em] flex flex-col md:flex-row justify-between items-center px-12 gap-8">
+                                <span>DIAMOND FENG 馮興怡 © 2026.</span>
+                                <span className="italic serif normal-case text-indigo-600 text-lg font-bold">Bridging the gap between Humanity & Scale.</span>
+                                <span>BASED IN TAIPEI, TAIWAN</span>
+                            </div>
                         </div>
                     </footer>
 
-                    <div className="fixed bottom-8 right-8 z-[10001]">
-                        <button onClick={() => setIsChatOpen(!isChatOpen)} className="w-14 h-14 bg-indigo-600 rounded-full flex items-center justify-center shadow-2xl text-white">
-                            {isChatOpen ? <Icon name="X" /> : <Icon name="MessageSquare" />}
+                    {/* AI Chat Bot */}
+                    <div className="fixed bottom-10 right-10 z-[10001]">
+                        <button onClick={() => setIsChatOpen(!isChatOpen)} className="w-16 h-16 bg-indigo-600 rounded-full flex items-center justify-center shadow-2xl text-white hover:scale-110 active:scale-95 transition-all">
+                            {isChatOpen ? <Icon name="X" size={24} /> : <Icon name="MessageSquare" size={24} />}
                         </button>
                         {isChatOpen && (
-                            <div className="absolute bottom-20 right-0 w-72 h-[400px] bg-[#111] border border-white/10 rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in fade-in">
-                                <div className="p-3 bg-indigo-600 font-black text-[10px] uppercase tracking-widest text-white uppercase-all">Digital Brain</div>
-                                <div className="flex-1 overflow-y-auto p-4 space-y-4 text-[10px] font-light">
+                            <div className="absolute bottom-24 right-0 w-80 h-[500px] md:w-96 bg-white dark:bg-[#111] border border-zinc-200 dark:border-white/10 rounded-3xl shadow-2xl flex flex-col overflow-hidden animate-in fade-in">
+                                <div className="p-5 bg-indigo-600 font-black text-xs uppercase tracking-[0.2em] text-white flex justify-between items-center">
+                                    <span>Diamond AI Assistant</span>
+                                    <Icon name="Sparkles" size={14} />
+                                </div>
+                                <div className="flex-1 overflow-y-auto p-6 space-y-6 text-base font-light">
                                     {chatHistory.map((msg, i) => (
                                         <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                                            <div className={`max-w-[85%] p-2 rounded-lg ${msg.role === 'user' ? 'bg-indigo-600 text-white' : 'bg-[#1a1a1a] text-gray-300 border border-white/5'}`}>{msg.text}</div>
+                                            <div className={`max-w-[85%] p-4 rounded-2xl shadow-sm ${msg.role === 'user' ? 'bg-indigo-600 text-white' : 'bg-zinc-100 dark:bg-[#1a1a1a] text-zinc-800 dark:text-zinc-200 border border-zinc-200 dark:border-zinc-800'}`}>
+                                                {msg.text}
+                                            </div>
                                         </div>
                                     ))}
-                                    {isTyping && <div className="animate-pulse text-indigo-500 uppercase-all">Thinking...</div>}
+                                    {isTyping && <div className="animate-pulse text-indigo-600 font-black text-xs uppercase italic">Thinking...</div>}
                                     <div ref={chatEndRef} />
                                 </div>
-                                <div className="p-2 bg-black flex items-center">
-                                    <input type="text" value={chatInput} onChange={(e) => setChatInput(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()} placeholder="輸入「流量」..." className="flex-1 bg-transparent border-none text-[10px] text-white p-2 focus:ring-0" />
-                                    <button onClick={handleSendMessage} className="p-2 text-indigo-500"><Icon name="Send" size={14} /></button>
+                                <div className="p-4 bg-zinc-50 dark:bg-black flex items-center space-x-3 border-t border-zinc-200 dark:border-zinc-900">
+                                    <input type="text" value={chatInput} onChange={(e) => setChatInput(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()} placeholder="詢問關於 流量, AI, 專案..." className="flex-1 bg-transparent border-none text-base text-zinc-800 dark:text-white p-2 focus:ring-0 placeholder-zinc-400" />
+                                    <button onClick={handleSendMessage} className="text-indigo-600 p-2"><Icon name="Send" size={20} /></button>
                                 </div>
                             </div>
                         )}
                     </div>
 
+                    {/* Mobile Menu Overlay */}
                     {isMenuOpen && (
-                        <div className="fixed inset-0 z-[10002] bg-black p-12 flex flex-col justify-center text-white uppercase font-black italic">
-                            <div className="absolute top-8 right-8" onClick={() => setIsMenuOpen(false)}><Icon name="X" size={40} /></div>
-                            <div className="space-y-10 text-6xl tracking-tighter uppercase-all">
-                                <a href="#growth" onClick={() => setIsMenuOpen(false)} className="block hover:text-indigo-500">Growth</a>
-                                <a href="#lab" onClick={() => setIsMenuOpen(false)} className="block hover:text-indigo-500">AI Lab</a>
-                                <a href="#archive" onClick={() => setIsMenuOpen(false)} className="block hover:text-indigo-500">Archive</a>
-                                <a href="#contact" onClick={() => setIsMenuOpen(false)} className="block hover:text-indigo-500">Contact</a>
+                        <div className="fixed inset-0 z-[10002] bg-white dark:bg-black p-12 flex flex-col justify-center text-zinc-900 dark:text-white uppercase font-black italic shadow-2xl">
+                            <div className="absolute top-10 right-10" onClick={() => setIsMenuOpen(false)}><Icon name="X" size={48} /></div>
+                            <div className="space-y-12 text-6xl tracking-tighter">
+                                <a href="#growth" onClick={() => setIsMenuOpen(false)} className="block hover:text-indigo-600">Growth</a>
+                                <a href="#archive" onClick={() => setIsMenuOpen(false)} className="block hover:text-indigo-600">Archive</a>
+                                <a href="#early" onClick={() => setIsMenuOpen(false)} className="block hover:text-indigo-600">Roots</a>
+                                <a href="#about" onClick={() => setIsMenuOpen(false)} className="block hover:text-indigo-600">About</a>
                             </div>
                         </div>
                     )}
