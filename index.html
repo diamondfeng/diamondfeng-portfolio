@@ -26,13 +26,14 @@
     <script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@babel/standalone/babel.min.js"></script>
+    <!-- 訪客計數器服務 (Busuanzi) -->
+    <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
 
     <style>
         body { transition: background-color 1s ease, color 0.5s ease; font-size: 16px; line-height: 1.5; letter-spacing: 0.01em; overflow-x: hidden; }
         .serif { font-family: 'Playfair Display', 'Noto Serif TC', serif; }
         .mono { font-family: 'JetBrains Mono', monospace; }
         
-        /* 高級噪點背景 */
         .noise {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: url('https://grainy-gradients.vercel.app/noise.svg');
@@ -40,7 +41,6 @@
         }
         .dark .noise { opacity: 0.04; }
         
-        /* 交互式鼠標圈 */
         .cursor-circle {
             position: fixed; width: 32px; height: 32px; border: 1px solid #6366f1;
             border-radius: 50%; pointer-events: none; z-index: 10000;
@@ -51,7 +51,6 @@
         ::-webkit-scrollbar { width: 4px; background: transparent; }
         ::-webkit-scrollbar-thumb { background: #4f46e5; border-radius: 10px; }
 
-        /* 照片與互動效果 */
         .photo-container { overflow: hidden; position: relative; border-radius: 4px; border: 1px solid rgba(255,255,255,0.05); }
         .photo-img { 
             transition: transform 1.2s cubic-bezier(0.19, 1, 0.22, 1), filter 1s ease;
@@ -62,20 +61,18 @@
         .photo-float { animation: floating 8s ease-in-out infinite; }
         @keyframes floating { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-20px); } }
 
-        /* 列點美學 */
         .list-bullet { @apply relative pl-8 mb-4; }
         .list-bullet::before { content: "→"; @apply absolute left-0 text-indigo-500 font-black opacity-80; }
         
-        /* 魔法星塵畫布 */
         #magic-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 9998; }
 
-        /* 內容揭露動態 */
         @keyframes reveal { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
         .reveal { animation: reveal 1.5s cubic-bezier(0.19, 1, 0.22, 1) forwards; }
 
-        /* 掃描線效果 */
         @keyframes scanline { 0% { transform: translateY(-100%); } 100% { transform: translateY(100%); } }
         .scanline { position: absolute; width: 100%; height: 8px; background: linear-gradient(to bottom, transparent, rgba(79, 70, 229, 0.15), transparent); animation: scanline 4s linear infinite; }
+        
+        html { scroll-behavior: smooth; }
     </style>
 </head>
 <body class="bg-[#fcfcfc] text-zinc-900 dark:bg-[#030303] dark:text-zinc-100">
@@ -85,53 +82,38 @@
     <script type="text/babel">
         const { useState, useEffect, useRef } = React;
 
-        // --- 魔法粒子系統 (Diamond Dust) ---
         const initMagicEffect = () => {
             const canvas = document.getElementById('magic-canvas');
             if (!canvas) return;
             const ctx = canvas.getContext('2d');
             let particles = [];
             let mouse = { x: -100, y: -100 };
-
-            const resize = () => {
-                canvas.width = window.innerWidth;
-                canvas.height = window.innerHeight;
-            };
+            const resize = () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; };
             window.addEventListener('resize', resize);
             resize();
-
             window.addEventListener('mousemove', (e) => {
-                mouse.x = e.clientX;
-                mouse.y = e.clientY;
+                mouse.x = e.clientX; mouse.y = e.clientY;
                 for(let i=0; i<4; i++) particles.push(new Particle());
             });
-
             class Particle {
                 constructor() {
-                    this.x = mouse.x;
-                    this.y = mouse.y;
+                    this.x = mouse.x; this.y = mouse.y;
                     this.size = Math.random() * 2.5 + 0.5;
                     this.speedX = Math.random() * 1.5 - 0.75;
                     this.speedY = Math.random() * 1.5 - 0.75;
                     this.color = Math.random() > 0.6 ? '#6366f1' : '#c7d2fe';
-                    this.life = 1;
-                    this.decay = Math.random() * 0.015 + 0.008;
+                    this.life = 1; this.decay = Math.random() * 0.015 + 0.008;
                 }
                 update() { this.x += this.speedX; this.y += this.speedY; this.life -= this.decay; }
                 draw() { 
-                    ctx.globalAlpha = this.life; 
-                    ctx.fillStyle = this.color; 
-                    ctx.beginPath(); 
-                    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2); 
-                    ctx.fill(); 
+                    ctx.globalAlpha = this.life; ctx.fillStyle = this.color; 
+                    ctx.beginPath(); ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2); ctx.fill(); 
                 }
             }
-
             const animate = () => {
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
                 for (let i = 0; i < particles.length; i++) {
-                    particles[i].update();
-                    particles[i].draw();
+                    particles[i].update(); particles[i].draw();
                     if (particles[i].life <= 0) { particles.splice(i, 1); i--; }
                 }
                 requestAnimationFrame(animate);
@@ -141,7 +123,7 @@
 
         const Icon = ({ name, size = 20, className = "" }) => {
             const icons = {
-                Sparkles: <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>,
+                Sparkles: <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L12 3Z"/>,
                 TrendingUp: <React.Fragment><path d="m22 7-8.5 8.5-5-5L2 17"/><path d="M16 7h6v6"/></React.Fragment>,
                 X: <React.Fragment><path d="M18 6 6 18"/><path d="m6 6 12 12"/></React.Fragment>,
                 Menu: <React.Fragment><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></React.Fragment>,
@@ -198,6 +180,11 @@
             const [imgError, setImgError] = useState(false);
 
             useEffect(() => {
+                if (isDark) document.documentElement.classList.add('dark');
+                else document.documentElement.classList.remove('dark');
+            }, [isDark]);
+
+            useEffect(() => {
                 if (!isLoading) initMagicEffect();
                 const handleScroll = () => setScrollProgress(window.scrollY / (document.documentElement.scrollHeight - window.innerHeight));
                 const moveCursor = (e) => setCursorPos({ x: e.clientX, y: e.clientY });
@@ -207,13 +194,8 @@
             }, [isLoading]);
 
             const handleCVUnlock = () => {
-                if (cvPassword === "2026") { 
-                    setIsCvUnlocked(true); 
-                    setPasswordError(false);
-                } else { 
-                    setPasswordError(true);
-                    setCvPassword(""); 
-                }
+                if (cvPassword === "2026") { setIsCvUnlocked(true); setPasswordError(false); }
+                else { setPasswordError(true); setCvPassword(""); }
             };
 
             const coreCareer = [
@@ -227,11 +209,11 @@
             ];
 
             const ventures = [
-                { c: "nuva", sub: "AI 教育網紅品牌", url: "https://www.meetnuva.com/", r: "商務開發總監 Business Development Director", p: "2025.09 – 2026.01", d: ["亞太跨國 0 到 1 陌生開發：一個月內達成泰國實體 AI 講座 香港最大線上 AI 教育公司聯名講座及 XChange 團隊合作佈局", "向誠品吉隆坡 (Eslite KL) 行銷團隊提案 AI 教育月書籍策展 規劃每週誠品講堂 並獲得天下換日線合作意向", "顧問式銷售溢價：將傳產客戶單日工作坊需求 顧問轉化為 3.5 日深度 AI 課程加發表活動 合約案源價值從 10 萬提升至 30 萬以上 (300% 溢價達成)", "戰略對接天下換日線爭取專屬專欄及網站專訪 牽線關鍵評論網《商業內幕》促使總編引薦基隆市長關注品牌相關訪問議題", "一週內成功談成 Red Bull 野營用品與花藝贊助 廠商追加 10 箱贊助量 引薦創辦人擔任 2026 Red Bull Basement 全球競賽台灣區評審"] },
-                { c: "couchspace", sub: "沙發心理", url: "https://www.thecouchspace.com/", r: "業務經理 Business Manager", p: "2025.09 – 2026.01", d: ["B2B 年度福利方案規劃：與 H2U 永悅健康共同策劃 緯穎科技 佳能台灣 (Canon) 2026 年度員工福利專案 負責價值鏈設計", "獨立規劃台達電年度方案 並針對 HR 族群主導執行專屬 HRV 檢測活動 建立品牌與企業之深層連結", "牽線並談成 天下學習 x couchspace 及 Hahow x couchspace 年度深度合作方案 包含國際書展專屬方案與訂閱影音課程 拓展變現渠道", "系統化整頓公司四年累積之名單 並透過陌生開發建立全新專業心理師 芳療師資與外部商務合作資源庫 活化公司資產"] }
+                { c: "nuva", sub: "AI 教育網紅品牌", url: "https://www.meetnuva.com/", r: "商務開發總監 Business Development Director", p: "2025.09 – 2026.01", d: ["亞太跨國 0 到 1 陌生開發：一個月內達成泰國實體 AI 講座（40人）、香港最大線上 AI 教育公司聯名講座（80人）及 XChange 團隊合作佈局", "向誠品吉隆坡 (Eslite KL) 行銷團隊提案 AI 教育月書籍策展 規劃每週誠品講堂 並獲得天下換日線合作意向", "顧問式銷售溢價：將傳產客戶單日工作坊需求 顧問轉化為 3.5 日深度 AI 課程加發表活動 合約案源價值從 10 萬提升至 30 萬以上 (300% 溢價達成)", "戰略對接天下換日線爭取專屬專欄及網站專訪 牽線關鍵評論網《商業內幕》促使總編引薦基隆市長關注品牌相關訪問議題", "一週內成功談成 Red Bull 野營用品與花藝贊助 廠商追加 10 箱贊助量 引薦創辦人擔任 2026 Red Bull Basement 全球競賽台灣區評審"] },
+                { c: "couchspace", sub: "沙發心理", url: "https://www.thecouchspace.com/", r: "業務經理 Business Manager", p: "2025.09 – 2026.01", d: ["B2B 年度福利方案規劃：與 H2U 永悅健康共同策劃 緯穎科技 佳能台灣 (Canon) 2026 年度員工福利專案 負責價值鏈設計", "獨立規劃台達電年度方案 並針對 HR 族群主導執行專屬 HRV 檢測活動 建立品牌與企業之深層連結", "牽線並談成 天下學習 x couchspace 及 Hahow x couchspace 年度深度合作方案 (包含國際書展專屬方案與訂閱影音課程) 拓展變現渠道", "系統化整頓公司四年累積之名單 並透過陌生開發建立全新專業心理師 芳療師資與外部商務合作資源庫 活化公司資產"] }
             ];
 
-            const brandData = { c: "Tokyo Edit", sub: "自媒體", r: "創辦人暨總編輯 Founder & Editor-in-Chief", p: "2025.04 – 至今", url: "https://www.threads.com/@tokyoedittt", d: ["品牌建立 3 天突破 2 萬粉絲 10 天內突破 3 萬粉絲 (目前 3.3 萬) 單篇最高達 91 萬次瀏覽與 1.8 萬次愛心 每月穩定互動 2 萬次以上 實現爆發性增長", "移植 Roomie AI 內容工作流 (資訊搜集 多語翻譯 重構 數據分析 SEO) 實現高頻且高質量的單人媒體運作模式", "與日本代購品牌選享家建立專業分工模式，主導品牌調性與選品策略，首月達成與日本金鳥 (Kincho)的合作", "高階品牌商業合作：首月即達成日本百年品牌「日本金鳥 (Kincho)」業配合作；後續接連受邀與 HOLA x 日本龜之子束子、中台興化學-鱷魚蚊香、Cure Care (安炫曜) 等企業執行專案與團購。"] };
+            const brandData = { c: "Tokyo Edit", sub: "自媒體", r: "創辦人暨總編輯 Founder & Editor-in-Chief", p: "2025.04 – 至今", url: "https://www.threads.com/@tokyoedittt", d: ["品牌建立 3 天突破 2 萬粉絲 10 天內突破 3 萬粉絲 (目前 3.3 萬) 單篇最高紀錄達 91 萬次瀏覽與 1.8 萬次愛心 每月穩定互動 2 萬次以上 實現爆發性增長", "移植 Roomie AI 內容工作流 (資訊搜集 多語翻譯 重構 數據分析 SEO) 實現高頻且高質量的內容產出", "媒體商務模式實踐：與日本代購品牌選享家建立專業分工模式，主導品牌調性與選品策略，首月達成與日本金鳥 (Kincho)的合作", "高階品牌商業合作：首月即達成日本百年品牌「日本金鳥 (Kincho)」業配合作；後續接連受邀與 HOLA x 日本龜之子束子、中台興化學-鱷魚蚊香、Cure Care (安炫曜) 等企業執行專案與團購。"] };
 
             const roots = [
                 { t: "香港輔仁媒體《爾雅集》", d: "專欄作者 (2015.02 – 2017.07)：發表書評 歌詞評析及散文創作" },
@@ -247,8 +229,7 @@
                     <div className="cursor-circle hidden md:block" style={{ left: cursorPos.x - 16, top: cursorPos.y - 16 }}></div>
                     <div className="fixed top-0 left-0 h-1 bg-indigo-600 z-[10001] transition-all duration-75" style={{ width: `${scrollProgress * 100}%` }}></div>
 
-                    {/* Navbar */}
-                    <nav className="fixed top-0 w-full z-[1000] px-6 md:px-12 py-6 flex justify-between items-center bg-[#fafafa]/80 dark:bg-[#030303]/80 backdrop-blur-3xl border-b border-zinc-200/50 dark:border-zinc-800/50">
+                    <nav className="fixed top-0 w-full z-[1000] px-6 md:px-12 py-6 flex justify-between items-center bg-[#fafafa]/80 dark:bg-[#030303]/80 backdrop-blur-3xl border-b border-zinc-200/50 dark:border-zinc-800/50 transition-all">
                         <div className="text-xl md:text-2xl font-black tracking-tighter uppercase transition-colors hover:text-indigo-600 cursor-pointer">Diamond <span className="text-indigo-600">Feng</span></div>
                         <div className="hidden lg:flex space-x-12 text-[13px] font-black tracking-[0.3em] uppercase items-center text-zinc-900 dark:text-zinc-400">
                             <a href="#about" className="hover:text-indigo-600 transition-all opacity-60 hover:opacity-100">Summary</a>
@@ -257,7 +238,7 @@
                             <a href="#ventures" className="hover:text-indigo-600 transition-all opacity-60 hover:opacity-100">Consulting</a>
                             <a href="#academic" className="hover:text-indigo-600 transition-all opacity-60 hover:opacity-100 font-bold">Education</a>
                             <button onClick={() => {setIsCVModalOpen(true); setPasswordError(false);}} className="flex items-center space-x-2 text-indigo-500 hover:text-indigo-400 transition-colors opacity-80 group"><Icon name="FileText" size={16} className="group-hover:scale-110 transition-transform" /><span>Full CV</span></button>
-                            <a href="mailto:fengdiamond@gmail.com" className="px-8 py-2.5 bg-indigo-600 text-white rounded-full font-bold hover:bg-indigo-700 transition-all shadow-xl hover:-translate-y-0.5 active:translate-y-0 text-white">Contact Me</a>
+                            <a href="#contact" className="px-8 py-2.5 bg-indigo-600 text-white rounded-full font-bold hover:bg-indigo-700 transition-all shadow-xl hover:-translate-y-0.5 active:translate-y-0 text-white">Contact Me</a>
                         </div>
                         <div className="flex items-center space-x-4">
                             <button onClick={() => setIsDark(!isDark)} className="p-2.5 bg-zinc-200/50 dark:bg-zinc-800/50 rounded-full text-indigo-600 shadow-sm transition-all hover:scale-110">{isDark ? <Icon name="Sun" size={20} /> : <Icon name="Moon" size={20} />}</button>
@@ -265,33 +246,26 @@
                         </div>
                     </nav>
 
-                    {/* CV Modal (Privacy Protected Vault) */}
+                    {/* CV Modal */}
                     {isCVModalOpen && (
                         <div className="fixed inset-0 z-[10006] flex items-center justify-center p-6">
                             <div className="absolute inset-0 bg-black/80 backdrop-blur-md animate-in fade-in duration-500" onClick={() => {setIsCVModalOpen(false); setIsCvUnlocked(false); setCvPassword(""); setPasswordError(false);}}></div>
-                            <div className="relative bg-[#fafafa] dark:bg-[#0a0a0a] border border-zinc-200 dark:border-zinc-800 w-full max-w-md p-10 rounded-2xl shadow-2xl animate-in fade-in zoom-in-95 duration-300">
+                            <div className="relative bg-[#fafafa] dark:bg-[#0a0a0a] border border-zinc-200 dark:border-zinc-800 w-full max-w-md p-10 rounded-2xl shadow-2xl animate-in fade-in zoom-in-95 duration-300 text-center">
                                 <button onClick={() => {setIsCVModalOpen(false); setIsCvUnlocked(false); setCvPassword(""); setPasswordError(false);}} className="absolute top-6 right-6 text-zinc-400 hover:text-zinc-100 transition-colors"><Icon name="X" size={24} /></button>
                                 {!isCvUnlocked ? (
-                                    <div className="text-center">
+                                    <div>
                                         <div className="w-16 h-16 bg-indigo-500/10 text-indigo-500 rounded-full flex items-center justify-center mx-auto mb-6"><Icon name="Lock" size={32} /></div>
                                         <h3 className="text-2xl font-black uppercase tracking-tighter mb-4 text-zinc-900 dark:text-white">Resume Vault</h3>
                                         <p className="text-zinc-500 dark:text-zinc-400 text-sm mb-8 leading-relaxed">為保護 Diamond 的個資，完整版 PDF 僅開放專業合作洽談使用。<br/>請輸入專屬訪問碼或直接聯繫 Diamond 獲取權限。</p>
                                         <div className="space-y-4">
-                                            <input type="password" placeholder="請輸入專屬訪問碼" value={cvPassword} onChange={(e) => {setCvPassword(e.target.value); setPasswordError(false);}} onKeyPress={(e) => e.key === 'Enter' && handleCVUnlock()} className={`w-full bg-zinc-100 dark:bg-zinc-900 border ${passwordError ? 'border-red-500' : 'border-zinc-200 dark:border-zinc-800'} rounded-lg px-4 py-4 text-center text-lg tracking-[0.5em] focus:outline-none focus:border-indigo-500 transition-colors placeholder:tracking-normal placeholder:text-sm text-zinc-900 dark:text-white`} />
-                                            
-                                            {passwordError && (
-                                                <div className="flex items-center justify-center space-x-2 text-red-500 text-xs font-bold animate-pulse">
-                                                    <Icon name="ShieldAlert" size={14} />
-                                                    <span>訪問碼錯誤，請重新輸入或聯繫作者</span>
-                                                </div>
-                                            )}
-
+                                            <input type="password" placeholder="請輸入專屬訪問碼" value={cvPassword} onChange={(e) => {setCvPassword(e.target.value); setPasswordError(false);}} onKeyPress={(e) => e.key === 'Enter' && handleCVUnlock()} className={`w-full bg-zinc-100 dark:bg-zinc-900 border ${passwordError ? 'border-red-500 text-red-500' : 'border-zinc-200 dark:border-zinc-800'} rounded-lg px-4 py-4 text-center text-lg tracking-[0.5em] focus:outline-none focus:border-indigo-500 transition-colors placeholder:tracking-normal placeholder:text-sm text-zinc-900 dark:text-white`} />
+                                            {passwordError && <div className="flex items-center justify-center space-x-2 text-red-500 text-xs font-bold animate-pulse"><Icon name="ShieldAlert" size={14} /><span>訪問碼錯誤，請重新輸入或聯繫作者</span></div>}
                                             <button onClick={handleCVUnlock} className="w-full bg-indigo-600 text-white font-bold py-4 rounded-lg hover:bg-indigo-700 transition-all shadow-lg active:scale-95">確認解鎖</button>
                                             <div className="pt-6 border-t border-zinc-200 dark:border-zinc-800"><a href="mailto:fengdiamond@gmail.com?subject=Request for Diamond's Full CV&body=Hi Diamond, I would like to request access to your full PDF resume. Thank you." className="text-xs font-bold text-zinc-400 hover:text-indigo-500 uppercase tracking-widest transition-colors flex items-center justify-center">聯繫獲取權限 <Icon name="ArrowUpRight" size={14} className="ml-2" /></a></div>
                                         </div>
                                     </div>
                                 ) : (
-                                    <div className="text-center">
+                                    <div>
                                         <div className="w-16 h-16 bg-emerald-500/10 text-emerald-500 rounded-full flex items-center justify-center mx-auto mb-6"><Icon name="Download" size={32} /></div>
                                         <h3 className="text-2xl font-black uppercase tracking-tighter mb-4 text-zinc-900 dark:text-white">Access Granted</h3>
                                         <p className="text-zinc-500 dark:text-zinc-400 text-sm mb-8 leading-relaxed">驗證成功，點擊下方按鈕即可下載最新版完整履歷檔案。</p>
@@ -310,9 +284,9 @@
                             <div className="lg:col-span-8">
                                 <div className="flex items-center justify-center lg:justify-start space-x-3 mb-10 text-indigo-600"><Icon name="Sparkles" size={22} /><span className="text-[11px] font-black tracking-[0.6em] uppercase font-bold">AI CONTENT ARCHITECT & STRATEGIST</span></div>
                                 <h1 className="text-[14vw] md:text-[10vw] font-black leading-[0.8] tracking-tighter mb-12 text-zinc-900 dark:text-zinc-100 uppercase select-none">馮興怡 <br /><span className="italic serif text-transparent bg-clip-text bg-gradient-to-r from-zinc-900 to-zinc-500 dark:from-white dark:to-zinc-600 tracking-tighter uppercase">Diamond Feng</span></h1>
-                                <p className="text-2xl md:text-5xl lg:text-6xl text-zinc-700 dark:text-zinc-400 font-light max-w-3xl mb-16 leading-tight uppercase">內容營運與增長專家 <br/><span className="text-indigo-600 font-bold italic serif">AI-Driven Content Ops & Growth</span></p>
+                                <p className="text-2xl md:text-5xl lg:text-6xl text-zinc-700 dark:text-zinc-400 font-light max-w-3xl mb-16 leading-tight uppercase text-zinc-900 dark:text-zinc-400">內容營運與增長專家 <br/><span className="text-indigo-600 font-bold italic serif">AI-Driven Content Ops & Growth</span></p>
                                 <div className="flex flex-wrap justify-center lg:justify-start gap-5 md:gap-10">
-                                    <a href="mailto:fengdiamond@gmail.com" className="w-full md:w-auto text-center bg-indigo-600 hover:bg-indigo-700 text-white px-16 py-6 text-sm font-black tracking-widest uppercase transition-all shadow-2xl rounded-sm hover:-translate-y-1 text-white font-bold">Connect With Me</a>
+                                    <a href="#contact" className="w-full md:w-auto text-center bg-indigo-600 hover:bg-indigo-700 text-white px-16 py-6 text-sm font-black tracking-widest uppercase transition-all shadow-2xl rounded-sm hover:-translate-y-1 text-white font-bold">Connect With Me</a>
                                     <a href="#brand" className="w-full md:w-auto text-center border-2 border-zinc-300 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-900 px-16 py-6 text-sm font-black tracking-widest uppercase transition-all rounded-sm font-bold">View Projects</a>
                                 </div>
                             </div>
@@ -324,9 +298,9 @@
                         </div>
                     </section>
 
-                    {/* Summary Section - Centered */}
-                    <section id="about" className="py-48 md:py-64 px-6 md:px-24 bg-zinc-100/50 dark:bg-[#060606] border-y border-zinc-200 dark:border-zinc-800 text-center">
-                        <div className="max-w-6xl mx-auto text-zinc-900 dark:text-white">
+                    {/* Summary Section */}
+                    <section id="about" className="py-48 md:py-64 px-6 md:px-24 bg-zinc-100/50 dark:bg-[#060606] border-y border-zinc-200 dark:border-zinc-800 text-center text-zinc-900 dark:text-white">
+                        <div className="max-w-6xl mx-auto">
                             <h2 className="text-[11px] font-black tracking-[1em] text-indigo-600 mb-20 uppercase opacity-60 font-bold">EXECUTIVE SUMMARY</h2>
                             <p className="text-3xl md:text-5xl lg:text-7xl font-serif italic leading-tight mb-20 tracking-tight">橫跨實體零售 電商與媒體領域逾 10 年經驗 <br/>擅長透過 AI 工作流將分散資訊轉化為高增長方案</p>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-20 body-text text-zinc-500 dark:text-zinc-400 font-light text-left md:text-center px-4 leading-relaxed lg:px-20">
@@ -336,14 +310,14 @@
                         </div>
                     </section>
 
-                    {/* PERSONAL MEDIA BRAND - Tokyo Edit */}
-                    <section id="brand" className="py-32 md:py-56 px-6 md:px-24 bg-white dark:bg-[#030303]">
-                        <div className="max-w-6xl mx-auto text-zinc-900 dark:text-zinc-100">
-                            <div className="flex items-center space-x-8 mb-24 opacity-40 text-indigo-600"><h2 className="text-[12px] font-black tracking-[1em] uppercase font-bold leading-none">PERSONAL MEDIA BRAND</h2><div className="h-px flex-1 bg-indigo-600/20"></div></div>
+                    {/* PERSONAL MEDIA BRAND */}
+                    <section id="brand" className="py-32 md:py-56 px-6 md:px-24 bg-white dark:bg-[#030303] text-zinc-900 dark:text-white">
+                        <div className="max-w-6xl mx-auto">
+                            <div className="flex items-center space-x-8 mb-24 opacity-40 text-indigo-600"><h2 className="text-[12px] font-black tracking-[1em] uppercase font-bold leading-none text-left">PERSONAL MEDIA BRAND</h2><div className="h-px flex-1 bg-indigo-600/20"></div></div>
                             <div className="bg-zinc-50 dark:bg-zinc-900/30 p-12 md:p-20 border border-indigo-600/10 rounded-sm relative overflow-hidden group shadow-xl">
                                 <div className="absolute top-0 right-0 p-8 opacity-[0.03] text-indigo-500 transition-opacity"><Icon name="TrendingUp" size={300} /></div>
                                 <div className="relative z-10">
-                                    <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end mb-16 gap-10 text-zinc-900 dark:text-white text-left">
+                                    <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end mb-16 gap-10 text-left">
                                         <div className="max-w-4xl">
                                             <div className="text-[10px] font-black text-indigo-500 mb-6 tracking-[0.5em] uppercase italic underline decoration-2 underline-offset-[12px]">Continuous Operation</div>
                                             <h4 className="text-6xl md:text-8xl font-black tracking-tighter uppercase leading-none mb-6">
@@ -362,7 +336,7 @@
                         </div>
                     </section>
 
-                    {/* STRATEGIC CONSULTING - nuva & couchspace */}
+                    {/* STRATEGIC CONSULTING */}
                     <section id="ventures" className="py-32 px-6 md:px-24 bg-zinc-50 dark:bg-zinc-950 border-y border-zinc-200 dark:border-zinc-800 text-center">
                         <div className="max-w-7xl mx-auto text-zinc-900 dark:text-zinc-100 uppercase font-bold">
                             <div className="flex items-center space-x-10 mb-20 opacity-40 text-zinc-400"><h2 className="text-[12px] font-black tracking-[1em] uppercase font-bold leading-none uppercase">STRATEGIC CONSULTING</h2><div className="h-px flex-1 bg-zinc-800"></div></div>
@@ -374,17 +348,10 @@
                                             <div>
                                                 <div className="text-[10px] font-black text-indigo-600 mb-6 tracking-[0.5em] uppercase italic underline decoration-2 underline-offset-[12px]">Project Deployment</div>
                                                 <h4 className="text-4xl md:text-5xl font-black tracking-tighter mb-4 flex flex-col normal-case">
-                                                    {v.url ? (
-                                                        <a href={v.url} target="_blank" rel="noopener noreferrer" className="hover:text-indigo-600 transition-colors inline-flex flex-col group/link text-zinc-900 dark:text-white">
-                                                            <span className="lowercase font-bold tracking-tighter text-indigo-600 dark:text-indigo-500">{v.c}</span>
-                                                            <span className="text-xl md:text-2xl opacity-40 mt-2 font-serif italic uppercase">{v.sub} <Icon name="ExternalLink" size={20} className="inline ml-2 opacity-30 group-hover/link:opacity-100 transition-all" /></span>
-                                                        </a>
-                                                    ) : (
-                                                        <React.Fragment>
-                                                            <span className="lowercase font-bold tracking-tighter text-indigo-600 dark:text-indigo-500 leading-none">{v.c}</span>
-                                                            <span className="text-xl md:text-2xl opacity-40 mt-2 font-serif italic uppercase">{v.sub}</span>
-                                                        </React.Fragment>
-                                                    )}
+                                                    <a href={v.url} target="_blank" rel="noopener noreferrer" className="hover:text-indigo-600 transition-colors inline-flex flex-col group/link">
+                                                        <span className="lowercase font-bold tracking-tighter text-indigo-600 dark:text-indigo-500">{v.c}</span>
+                                                        <span className="text-xl md:text-2xl opacity-40 mt-2 font-serif italic uppercase">{v.sub} <Icon name="ExternalLink" size={20} className="inline ml-2 opacity-30 group-hover/link:opacity-100 transition-all" /></span>
+                                                    </a>
                                                 </h4>
                                                 <p className="text-xl font-bold italic text-zinc-500 dark:text-zinc-400 uppercase tracking-widest leading-none">{v.r}</p>
                                             </div>
@@ -398,21 +365,21 @@
                     </section>
 
                     {/* Core Career Track */}
-                    <section id="core-career" className="py-32 md:py-56 px-6 md:px-24">
+                    <section id="core-career" className="py-32 md:py-56 px-6 md:px-24 text-left">
                         <div className="max-w-5xl mx-auto text-zinc-900 dark:text-zinc-100">
                             <h3 className="text-6xl md:text-9xl font-black tracking-tighter mb-48 uppercase italic text-center lg:text-left">Core <br/><span className="text-indigo-600 tracking-normal">Career Track</span></h3>
-                            <div className="space-y-48 md:space-y-64 text-left">
+                            <div className="space-y-48 md:space-y-64">
                                 {coreCareer.map((job, i) => (
-                                    <div key={i} className="group grid grid-cols-1 lg:grid-cols-12 gap-10 md:gap-20 border-l-2 border-zinc-100 dark:border-zinc-800 pl-8 lg:pl-0 lg:border-none">
-                                        <div className="lg:col-span-4">
+                                    <div key={i} className="group grid grid-cols-1 lg:grid-cols-12 gap-10 md:gap-20 border-l-2 border-zinc-100 dark:border-zinc-800 pl-8 lg:pl-0 lg:border-none text-left">
+                                        <div className="lg:col-span-4 text-left">
                                             <div className="text-sm font-black text-indigo-600 mb-6 italic tracking-widest leading-none">{job.p}</div>
-                                            <div className="text-4xl md:text-5xl font-black tracking-tighter uppercase group-hover:text-indigo-600 transition-colors leading-tight mb-4 text-zinc-900 dark:text-zinc-100">
-                                                {job.url ? (<a href={job.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center hover:underline decoration-indigo-600/30">{job.c} <Icon name="ExternalLink" size={24} className="ml-3 opacity-30 group-hover:opacity-100" /></a>) : job.c}
+                                            <div className="text-4xl md:text-5xl font-black tracking-tighter uppercase group-hover:text-indigo-600 transition-colors leading-tight mb-4 text-zinc-900 dark:text-zinc-100 text-left">
+                                                {job.url ? (<a href={job.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center hover:underline decoration-indigo-600/30">{job.c} <Icon name="ExternalLink" size={24} className="ml-3 opacity-30 group-hover:opacity-100 transition-all" /></a>) : job.c}
                                             </div>
                                             <div className="text-base md:text-lg font-bold italic text-zinc-500 dark:text-zinc-500 uppercase tracking-widest leading-snug">{job.r}</div>
                                         </div>
-                                        <div className="lg:col-span-8 lg:border-l-[1px] lg:border-zinc-200 lg:dark:border-zinc-800 lg:pl-20 text-left">
-                                            <ul className="space-y-6 text-zinc-600 dark:text-zinc-400">{job.d.map((bullet, idx) => (<li key={idx} className="list-bullet body-text font-light leading-relaxed">{bullet}</li>))}</ul>
+                                        <div className="lg:col-span-8 lg:border-l-[1px] lg:border-zinc-200 lg:dark:border-zinc-800 lg:pl-20 text-left text-zinc-600 dark:text-zinc-400">
+                                            <ul className="space-y-6">{job.d.map((bullet, idx) => (<li key={idx} className="list-bullet body-text font-light leading-relaxed">{bullet}</li>))}</ul>
                                         </div>
                                     </div>
                                 ))}
@@ -431,37 +398,47 @@
                                 </div>
                                 <Icon name="TrendingUp" className="absolute top-0 right-0 p-12 opacity-5 dark:opacity-10 text-indigo-600" size={450} />
                             </div>
-                            <div className="md:col-span-2 bg-indigo-600 p-12 md:p-20 flex flex-col justify-center text-white shadow-2xl text-center"><div className="text-6xl md:text-[5.5rem] font-black tracking-tighter italic uppercase leading-none">33,000+ Fans</div><p className="text-lg uppercase tracking-[0.4em] opacity-80 mt-10 font-bold italic border-t border-white/20 pt-8 uppercase">10 Days Social Explosion @Tokyo Edit</p></div>
+                            <div className="md:col-span-2 bg-indigo-600 p-12 md:p-20 flex flex-col justify-center text-white shadow-2xl text-center"><div className="text-6xl md:text-[5.5rem] font-black tracking-tighter italic uppercase leading-none text-white">33,000+ Fans</div><p className="text-lg uppercase tracking-[0.4em] opacity-80 mt-10 font-bold italic border-t border-white/20 pt-8 uppercase text-white">10 Days Social Explosion @Tokyo Edit</p></div>
                             <div className="bg-white dark:bg-[#111] border border-zinc-200 p-10 md:p-16 shadow-sm text-center transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-900"><div className="text-[10px] font-black uppercase opacity-40 mb-4 tracking-widest text-zinc-400 font-bold">BD IMPACT</div><div className="text-7xl font-black tracking-tighter leading-none italic uppercase text-indigo-600 transition-transform group-hover:scale-110 font-bold underline">300%</div><p className="text-[11px] font-black uppercase tracking-widest opacity-60 mt-6 font-bold text-indigo-600">Project Value Premium</p></div>
-                            <div className="bg-zinc-900 dark:bg-white text-white dark:text-black p-10 md:p-16 shadow-xl text-center"><div className="text-[10px] font-black uppercase opacity-40 mb-4 tracking-widest font-bold font-black italic">REVENUE SCALING</div><div className="text-4xl md:text-5xl font-black tracking-tighter leading-tight uppercase transition-transform group-hover:scale-110">400K+</div><p className="text-[11px] font-black opacity-60 uppercase tracking-widest mt-4 italic uppercase">Monthly Monetization</p></div>
+                            <div className="bg-zinc-900 dark:bg-white text-white dark:text-black p-10 md:p-16 shadow-xl text-center"><div className="text-[10px] font-black uppercase opacity-40 mb-4 tracking-widest font-bold font-black italic uppercase">REVENUE SCALING</div><div className="text-4xl md:text-5xl font-black tracking-tighter leading-tight uppercase transition-transform group-hover:scale-110">400K+</div><p className="text-[11px] font-black opacity-60 uppercase tracking-widest mt-4 italic uppercase">Monthly Monetization</p></div>
                         </div>
                     </section>
 
-                    {/* Roots & Writing Section */}
-                    <section id="roots" className="py-32 md:py-64 px-6 md:px-24 bg-zinc-50 dark:bg-[#030303]">
+                    <section id="roots" className="py-32 md:py-64 px-6 md:px-24 bg-zinc-50 dark:bg-[#030303] text-left">
                         <div className="max-w-6xl mx-auto">
                             <div className="flex items-center space-x-8 mb-24 opacity-40 text-indigo-600 font-bold"><h2 className="text-[12px] font-black tracking-[1em] uppercase font-bold leading-none">EARLY ROOTS & WRITING</h2><div className="h-px flex-1 bg-zinc-300 dark:bg-zinc-800"></div></div>
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 md:gap-20 text-left">
-                                {roots.map((item, i) => (<div key={i} className="border-b border-zinc-200 dark:border-zinc-800 pb-10 group transition-all text-zinc-900 dark:text-zinc-100"><div className="text-2xl md:text-3xl font-serif italic group-hover:text-indigo-600 transition-colors uppercase leading-tight mb-4">{item.t}</div><div className="text-[14px] font-bold text-zinc-400 mt-2 uppercase tracking-[0.1em] opacity-80 leading-relaxed font-light">{item.d}</div></div>))}
+                                {roots.map((item, i) => (<div key={i} className="border-b border-zinc-200 dark:border-zinc-800 pb-10 group transition-all text-zinc-900 dark:text-zinc-100 text-left"><div className="text-2xl md:text-3xl font-serif italic group-hover:text-indigo-600 transition-colors uppercase leading-tight mb-4 text-left">{item.t}</div><div className="text-[14px] font-bold text-zinc-400 mt-2 uppercase tracking-[0.1em] opacity-80 leading-relaxed font-light text-left">{item.d}</div></div>))}
                             </div>
                         </div>
                     </section>
 
-                    {/* Education Section */}
-                    <section id="academic" className="py-32 md:py-64 px-6 md:px-24 text-zinc-900 dark:text-zinc-100">
+                    <section id="academic" className="py-32 md:py-64 px-6 md:px-24 text-zinc-900 dark:text-zinc-100 text-left">
                         <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-24 md:gap-40 text-left">
-                            <div className="lg:col-span-1 border-l-4 border-indigo-600 pl-10 text-left"><h3 className="text-xs font-black tracking-[1.2em] text-zinc-400 mb-12 uppercase italic font-bold opacity-40">EDUCATION</h3><div className="space-y-16"><div className="group/edu"><div className="text-[11px] font-black uppercase opacity-50 mb-4 tracking-widest text-indigo-600 font-bold italic uppercase">Technical Training</div><div className="text-3xl font-black uppercase tracking-tight mb-3 leading-none group-hover/edu:text-indigo-500 transition-colors font-bold tracking-tighter">ALPHA Camp</div><div className="text-base italic text-zinc-500 uppercase leading-relaxed font-light">JavaScript Full Stack Program (2022)</div></div><div className="group/edu"><div className="text-[11px] font-black uppercase opacity-50 mb-4 tracking-widest text-indigo-600 font-bold italic uppercase">Literary Arts</div><div className="text-3xl font-black uppercase tracking-tight mb-3 leading-none group-hover/edu:text-indigo-500 transition-colors font-bold tracking-tighter uppercase">國立臺北教育大學</div><div className="text-base italic text-zinc-500 leading-relaxed uppercase font-light">語文與創作學系文學創作組</div><div className="text-[13px] font-bold text-indigo-500 mt-12 uppercase tracking-widest italic leading-relaxed border-t border-zinc-200 dark:border-zinc-800 pt-8 shadow-sm"><span className="opacity-60 block mb-2 font-black uppercase tracking-widest text-[10px]">個人著作</span>攝影散文集《大娛樂家》<br/>ISBN 978-957-43-4386-7</div></div></div></div>
-                            <div className="lg:col-span-2 text-left"><h3 className="text-xs font-black tracking-[1.2em] text-zinc-400 mb-12 uppercase italic font-bold opacity-40">CORE COMPETENCIES</h3><div className="space-y-16"><div className="flex flex-wrap gap-5">{["AI Workflow", "GAS Architecture", "Growth Hacking", "SEO Expert", "Technical BD", "Content Strategy"].map(skill => (<span key={skill} className="px-7 py-4 bg-zinc-200/40 dark:bg-zinc-900/40 border border-zinc-200 dark:border-zinc-800 text-[11px] font-black uppercase tracking-widest text-zinc-600 dark:text-zinc-400 hover:border-indigo-600 hover:text-white hover:bg-indigo-600 transition-all font-bold rounded-sm cursor-default uppercase">{skill}</span>))}</div><div className="pt-20 border-t border-zinc-200 dark:border-zinc-800 grid grid-cols-1 md:grid-cols-2 gap-10 text-zinc-900 dark:text-zinc-100"><div className="text-indigo-600 text-left"><div className="font-black italic tracking-tighter uppercase text-3xl md:text-5xl underline decoration-indigo-600/30 leading-none mb-4 whitespace-nowrap">TOEIC 730 | IELTS 5.5</div><div className="text-[11px] font-bold text-zinc-400 uppercase tracking-[0.4em] italic opacity-60 font-mono leading-relaxed mt-10"> // CERTIFICATION: AUSTRALIAN ESPRESSO<br/> // CBD COLLEGE PTY LTD, 2019</div></div><div className="space-y-4 text-left"><div className="text-[10px] font-black uppercase tracking-widest text-indigo-500 font-bold">Linguistic Mastery</div><div className="text-sm font-bold uppercase tracking-widest text-zinc-400 leading-relaxed font-serif italic text-left">Mandarin (Native) / Taiwanese (Native) / English (Advanced) / Cantonese (Listening Advanced)</div></div></div></div></div>
+                            <div className="lg:col-span-1 border-l-4 border-indigo-600 pl-10 text-left"><h3 className="text-xs font-black tracking-[1.2em] text-zinc-400 mb-12 uppercase italic font-bold opacity-40">EDUCATION</h3><div className="space-y-16 text-left"><div className="group/edu text-left"><div className="text-[11px] font-black uppercase opacity-50 mb-4 tracking-widest text-indigo-600 font-bold italic uppercase">Technical Training</div><div className="text-3xl font-black uppercase tracking-tight mb-3 leading-none group-hover/edu:text-indigo-500 transition-colors font-bold tracking-tighter">ALPHA Camp</div><div className="text-base italic text-zinc-500 uppercase leading-relaxed font-light">JavaScript Full Stack Program (2022)</div></div><div className="group/edu text-left"><div className="text-[11px] font-black uppercase opacity-50 mb-4 tracking-widest text-indigo-600 font-bold italic uppercase">Literary Arts</div><div className="text-3xl font-black uppercase tracking-tight mb-3 leading-none group-hover/edu:text-indigo-500 transition-colors font-bold tracking-tighter uppercase">國立臺北教育大學</div><div className="text-base italic text-zinc-500 leading-relaxed uppercase font-light text-left">語文與創作學系文學創作組</div><div className="text-[13px] font-bold text-indigo-500 mt-12 uppercase tracking-widest italic leading-relaxed border-t border-zinc-200 dark:border-zinc-800 pt-8 shadow-sm text-zinc-900 dark:text-white"><span className="opacity-60 block mb-2 font-black uppercase tracking-widest text-[10px]">個人著作</span>攝影散文集《大娛樂家》<br/>ISBN 978-957-43-4386-7</div></div></div></div>
+                            <div className="lg:col-span-2 text-left text-zinc-900 dark:text-zinc-400"><h3 className="text-xs font-black tracking-[1.2em] text-zinc-400 mb-12 uppercase italic font-bold opacity-40 text-left">CORE COMPETENCIES</h3><div className="space-y-16 text-left"><div className="flex flex-wrap gap-5 text-left">{["AI Workflow", "GAS Architecture", "Growth Hacking", "SEO Expert", "Technical BD", "Content Strategy"].map(skill => (<span key={skill} className="px-7 py-4 bg-zinc-200/40 dark:bg-zinc-900/40 border border-zinc-200 dark:border-zinc-800 text-[11px] font-black uppercase tracking-widest text-zinc-600 dark:text-zinc-400 hover:border-indigo-600 hover:text-white hover:bg-indigo-600 transition-all font-bold rounded-sm cursor-default uppercase text-left">{skill}</span>))}</div><div className="pt-20 border-t border-zinc-200 dark:border-zinc-800 grid grid-cols-1 md:grid-cols-2 gap-10 text-zinc-900 dark:text-zinc-100 text-left"><div className="text-indigo-600 text-left"><div className="font-black italic tracking-tighter uppercase text-3xl md:text-5xl underline decoration-indigo-600/30 leading-none mb-4 whitespace-nowrap text-left">TOEIC 730 | IELTS 5.5</div><div className="text-[11px] font-bold text-zinc-400 uppercase tracking-[0.4em] italic opacity-60 font-mono leading-relaxed mt-10 text-left"> // CERTIFICATION: AUSTRALIAN ESPRESSO<br/> // CBD COLLEGE PTY LTD, 2019</div></div><div className="space-y-4 text-left"><div className="text-[10px] font-black uppercase tracking-widest text-indigo-500 font-bold text-left uppercase">Linguistic Mastery</div><div className="text-sm font-bold uppercase tracking-widest text-zinc-400 leading-relaxed font-serif italic text-left text-zinc-400">Mandarin (Native) / Taiwanese (Native) / English (Advanced) / Cantonese (Listening Advanced)</div></div></div></div></div>
                         </div>
                     </section>
 
-                    {/* Footer - The Ultimate CTA */}
+                    {/* Footer - The Ultimate CTA + Visitor Counter */}
                     <footer id="contact" className="py-32 md:py-64 bg-zinc-100 dark:bg-black text-center relative overflow-hidden text-zinc-900 dark:text-zinc-100 uppercase">
                         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[25vw] font-black text-white dark:text-white/[0.015] italic uppercase pointer-events-none tracking-tighter select-none">DIAMOND</div>
                         <div className="relative z-10 px-6">
-                            <h2 className="text-6xl md:text-9xl lg:text-[12rem] font-black tracking-tighter mb-24 italic leading-[0.75] select-none">Let's scale <br/><span className="text-indigo-600 uppercase">your story</span></h2>
+                            <h2 className="text-6xl md:text-9xl lg:text-[12rem] font-black tracking-tighter mb-24 italic leading-[0.75] select-none text-zinc-900 dark:text-white uppercase">Let's scale <br/><span className="text-indigo-600 uppercase">your story</span></h2>
                             <div className="mt-20 md:mt-40"><a href="mailto:fengdiamond@gmail.com" className="text-2xl md:text-5xl lg:text-7xl font-black tracking-tighter hover:text-indigo-600 transition-all underline decoration-4 md:decoration-[16px] underline-offset-8 md:underline-offset-[24px] decoration-indigo-600/20 hover:decoration-indigo-600/100 uppercase leading-none block md:inline-block text-zinc-900 dark:text-white">fengdiamond@gmail.com</a></div>
-                            <div className="mt-48 md:mt-72 pt-20 border-t border-zinc-300 dark:border-zinc-900 text-[11px] text-zinc-400 font-black uppercase tracking-[0.6em] flex flex-col md:flex-row justify-between items-center px-4 md:px-24 gap-16 text-zinc-400"><span className="opacity-60 font-bold tracking-widest font-mono">DIAMOND FENG 馮興怡 © 2026 ALL RIGHTS RESERVED</span><span className="italic serif normal-case text-indigo-500 text-2xl font-black tracking-tight drop-shadow-sm">Bridging the gap between Humanity & Scale</span><span className="uppercase opacity-60 font-bold tracking-widest font-mono">TAIPEI, TAIWAN</span></div>
+                            
+                            {/* 版權與數據欄 */}
+                            <div className="mt-48 md:mt-72 pt-20 border-t border-zinc-300 dark:border-zinc-900 text-[11px] text-zinc-400 font-black uppercase tracking-[0.5em] flex flex-col md:flex-row justify-between items-center px-4 md:px-24 gap-12 text-zinc-400">
+                                <span className="opacity-60 font-bold tracking-widest font-mono">DIAMOND FENG 馮興怡 © 2026 ALL RIGHTS RESERVED</span>
+                                
+                                {/* 訪客計數器 */}
+                                <div className="font-mono text-indigo-500 font-bold tracking-[0.3em] flex items-center space-x-3 bg-indigo-500/5 px-4 py-2 rounded-full border border-indigo-500/10">
+                                    <span className="opacity-60">TOTAL VIEWS:</span>
+                                    <span id="busuanzi_value_site_pv">...</span>
+                                </div>
+
+                                <span className="uppercase opacity-60 font-bold font-mono">TAIPEI, TAIWAN</span>
+                            </div>
                         </div>
                     </footer>
 
@@ -476,7 +453,7 @@
                                 <a href="#ventures" onClick={() => setIsMenuOpen(false)} className="block hover:text-indigo-600 transition-all hover:translate-x-8 uppercase">Consulting</a>
                                 <a href="#academic" onClick={() => setIsMenuOpen(false)} className="block hover:text-indigo-600 transition-all hover:translate-x-8 uppercase font-bold">Education</a>
                                 <button onClick={() => {setIsCVModalOpen(true); setIsMenuOpen(false); setPasswordError(false);}} className="block hover:text-indigo-600 transition-all hover:translate-x-8 text-indigo-500 uppercase font-bold tracking-widest text-4xl text-left">Full CV</button>
-                                <a href="mailto:fengdiamond@gmail.com" onClick={() => setIsMenuOpen(false)} className="block hover:text-indigo-600 transition-all hover:translate-x-8 text-indigo-600 underline uppercase font-bold tracking-widest">Connect</a>
+                                <a href="#contact" onClick={() => setIsMenuOpen(false)} className="block hover:text-indigo-600 transition-all hover:translate-x-8 text-indigo-600 underline uppercase font-bold tracking-widest">Connect</a>
                             </div>
                         </div>
                     )}
